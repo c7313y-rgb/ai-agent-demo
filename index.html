@@ -3,15 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="中小企業・金融機関向け AIエージェント実務デモ。4業務×12業種パターンを、その場で動かして体感できます。">
+<meta name="description" content="中小企業・地域金融機関向けの体感デモ。5業務×15パターンのAIエージェントを、その場で動かして確認できます。人が承認で止める設計と、AIが「できない」と止まる限界ケースも収録。">
 <meta name="color-scheme" content="light dark">
+<link rel="canonical" href="https://c7313y-rgb.github.io/ai-agent-demo/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AIエージェント実務デモ">
+<meta property="og:title" content="AIエージェント実務デモ — Agent Workbench">
+<meta property="og:description" content="中小企業・地域金融機関向けの体感デモ。5業務×15パターンのAIエージェントを、その場で動かして確認できます。人が承認で止める設計と、AIが「できない」と止まる限界ケースも収録。">
+<meta property="og:url" content="https://c7313y-rgb.github.io/ai-agent-demo/">
+<meta property="og:image" content="https://c7313y-rgb.github.io/ai-agent-demo/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AIエージェント実務デモ — Agent Workbench">
+<meta name="twitter:description" content="中小企業・地域金融機関向けの体感デモ。5業務×15パターンのAIエージェントを、その場で動かして確認できます。人が承認で止める設計と、AIが「できない」と止まる限界ケースも収録。">
+<meta name="twitter:image" content="https://c7313y-rgb.github.io/ai-agent-demo/og.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%231F5FB8%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%224.6%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222.6%22/%3E%3Cpath d=%22M16 4v4M16 24v4M5.6 10l3.5 2M22.9 20l3.5 2M5.6 22l3.5-2M22.9 12l3.5-2%22 stroke=%22white%22 stroke-width=%222.6%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
 <style>*{box-sizing:border-box}html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
 <title>AIエージェント実務デモ</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
 /* ============ tokens ============ */
 :root{
@@ -47,8 +59,8 @@
   --con-gate:#FF8B6B;
   --con-run:#F0BE5E;
   --jp:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic Medium","Yu Gothic","Meiryo","Noto Sans JP",sans-serif;
-  --sans:"IBM Plex Sans",var(--jp);
-  --mono:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,var(--jp),monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,var(--jp);
+  --mono:ui-monospace,"SFMono-Regular","SF Mono",Menlo,Consolas,"Liberation Mono",var(--jp),monospace;
 }
 :root:not([data-theme="light"]){}
 @media (prefers-color-scheme: dark){
@@ -499,6 +511,134 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
 }
+
+/* ============ ROI calculator ============ */
+.roi{
+  margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:16px;
+}
+.roi h4{font-size:12.5px}
+.roi .sub{font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.7}
+.roi-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px;margin-top:13px}
+.roi-f{display:flex;flex-direction:column;gap:5px}
+.roi-f label{font-size:11px;color:var(--text-2)}
+.roi-f .box{
+  display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:7px;
+  background:var(--ground);padding:0 9px;transition:border-color .15s;
+}
+.roi-f .box:focus-within{border-color:var(--accent)}
+.roi-f input{
+  width:100%;min-width:0;border:none;background:none;padding:8px 0;
+  font-family:var(--mono);font-size:14px;color:var(--text);
+  font-variant-numeric:tabular-nums;text-align:right;-moz-appearance:textfield;
+}
+.roi-f input::-webkit-outer-spin-button,.roi-f input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.roi-f .box span{font-size:11px;color:var(--text-3);flex:none}
+.roi-out{
+  margin-top:14px;padding-top:13px;border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:12px;
+}
+.roi-o em{font-style:normal;display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);font-family:var(--mono);margin-bottom:4px}
+.roi-o b{display:block;font-size:21px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.15}
+.roi-o.hl b{color:var(--accent)}
+.roi-o small{display:block;font-size:11px;color:var(--text-3);margin-top:3px;font-weight:400}
+.roi-note{margin-top:12px;font-size:11px;color:var(--text-3);line-height:1.75}
+
+/* ============ CTA ============ */
+.cta{
+  margin-top:14px;border-radius:9px;padding:18px;
+  background:linear-gradient(140deg,var(--accent),color-mix(in srgb,var(--accent) 62%, #0B2A52));
+  color:#fff;
+}
+.cta h4{font-size:14.5px;color:#fff;letter-spacing:-.01em}
+.cta p{font-size:12.5px;line-height:1.8;color:rgba(255,255,255,.86);margin-top:6px}
+.cta .acts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.cta-btn{
+  font-size:12.5px;font-weight:600;padding:9px 16px;border-radius:7px;
+  background:#fff;color:var(--accent);transition:.15s;text-decoration:none;display:inline-block;
+}
+.cta-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px -6px rgba(0,0,0,.4)}
+.cta-btn.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45)}
+.cta-btn.ghost:hover{background:rgba(255,255,255,.12);box-shadow:none}
+
+/* ============ audit trail ============ */
+.audit{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.audit-hd{
+  display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+  padding:12px 14px;border-bottom:1px solid transparent;transition:.15s;
+}
+.audit-hd:hover{background:var(--panel-2)}
+.audit-hd h4{font-size:12.5px}
+.audit-hd .cnt{
+  font-family:var(--mono);font-size:10.5px;color:var(--text-3);
+  border:1px solid var(--line);border-radius:20px;padding:1px 8px;
+}
+.audit-hd .chev2{margin-left:auto;width:12px;height:12px;color:var(--text-3);transition:transform .18s}
+.audit.open .chev2{transform:rotate(90deg)}
+.audit.open .audit-hd{border-bottom-color:var(--line-soft)}
+.audit-bd{display:none;padding:4px 0 6px}
+.audit.open .audit-bd{display:block}
+.au{
+  display:grid;grid-template-columns:62px 1fr;gap:10px;padding:7px 14px;
+  font-size:11.5px;line-height:1.6;border-bottom:1px solid var(--line-soft);
+}
+.au:last-child{border-bottom:none}
+.au time{font-family:var(--mono);font-size:10.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.au .ev{color:var(--text-2);word-break:break-word}
+.au .ev b{color:var(--text);font-weight:600}
+.au.k-gate .ev b{color:var(--gate)}
+.au.k-out .ev b{color:var(--ok)}
+
+/* ============ governance panel (hub) ============ */
+.gov{margin-top:16px;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.gov-hd{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:15px 18px;transition:.15s}
+.gov-hd:hover{background:var(--panel-2)}
+.gov-hd svg{width:15px;height:15px;color:var(--accent);flex:none}
+.gov-hd h3{font-size:13.5px}
+.gov-hd .chev2{margin-left:auto;width:13px;height:13px;color:var(--text-3);transition:transform .18s}
+.gov.open .chev2{transform:rotate(90deg)}
+.gov-bd{display:none;padding:0 18px 18px}
+.gov.open .gov-bd{display:block}
+.gov-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.gov-item{border-top:1px solid var(--line-soft);padding-top:12px}
+.gov-item h4{font-size:12px;margin-bottom:5px}
+.gov-item p{font-size:12px;color:var(--text-2);line-height:1.8}
+
+/* ============ halt (limit case) styling ============ */
+.stamp.halt{border-color:var(--gate);color:var(--gate);background:var(--gate-soft)}
+.done-line.halt{border-color:var(--con-gate);background:rgba(255,139,107,.09)}
+.done-line.halt svg{color:var(--con-gate)}
+.card.limit .card-ico{background:var(--gate-soft);color:var(--gate)}
+.card.limit:hover{border-color:color-mix(in srgb,var(--gate) 45%,var(--line))}
+
+/* ============ share / print buttons ============ */
+.outacts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.sbtn{
+  font-size:12px;padding:7px 12px;border-radius:6px;border:1px solid var(--line);
+  background:var(--panel);color:var(--text-2);transition:.15s;
+}
+.sbtn:hover{color:var(--text);border-color:var(--accent);background:var(--accent-soft)}
+.sbtn.done{color:var(--ok);border-color:var(--ok);background:var(--ok-soft)}
+
+/* ============ print — 成果物だけを出す ============ */
+@media print{
+  @page{margin:14mm}
+  .topbar,.runbar,.col-in,.console,.results,.disclaimer,.outacts,.audit,.hub{display:none !important}
+  body{background:#fff;color:#000}
+  .stage{display:block}
+  .pane{border:none}
+  .pane-head{display:none}
+  .pane-body{padding:0}
+  .out-doc{border:1px solid #999}
+  .print-only{display:block !important}
+  tbody tr,.bul{animation:none}
+}
+.print-only{display:none}
+.print-only h1{font-size:16px;margin-bottom:4px}
+.print-only p{font-size:11px;color:#444}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
 </style>
 
 <header class="topbar">
@@ -522,17 +662,19 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
 
 <!-- ==================== HUB ==================== -->
 <main class="hub wrap" id="hub">
-  <div class="hub-eyebrow">実務シナリオ / 全4業務・12パターン</div>
+  <div class="hub-eyebrow">実務シナリオ / 全5業務・15パターン</div>
   <h1 class="hub-title">AIエージェントが、実際に仕事を片づけるところを見る。</h1>
   <p class="hub-lead">
     チャットに質問して答えが返る、ではありません。届いた依頼を読み、社内データを照会し、計算し、
     人の判断が要る場所で止まり、成果物を仕上げるまで。<strong>業務を選び、自社に近い業種を選ぶと、その場で動きます。</strong>
+    最後の1本は、あえて<strong>AIが「できない」と止まるところ</strong>を見せます。
   </p>
   <div class="hub-strip">
-    <div class="hub-stat"><b class="num">4</b><span>業務シナリオ</span></div>
-    <div class="hub-stat"><b class="num">12</b><span>業種パターン</span></div>
+    <div class="hub-stat"><b class="num">5</b><span>業務シナリオ</span></div>
+    <div class="hub-stat"><b class="num">15</b><span>業種パターン</span></div>
     <div class="hub-stat"><b class="num">20-40<small>秒</small></b><span>1本あたり</span></div>
     <div class="hub-stat"><b>承認あり</b><span>人が止める設計を内蔵</span></div>
+    <div class="hub-stat"><b>試算あり</b><span>自社の件数で削減額を出す</span></div>
   </div>
 
   <div class="sec-head">
@@ -541,9 +683,38 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
   </div>
   <div class="grid" id="cards"></div>
 
+  <div class="gov" id="gov">
+    <button class="gov-hd" type="button" id="govHd">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>
+      </svg>
+      <h3>ガバナンス・監査対応（金融機関の審査部門向け）</h3>
+      <span class="chev2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+    </button>
+    <div class="gov-bd">
+      <div class="gov-grid">
+        <div class="gov-item"><h4>誰が最終責任を持つか</h4><p>エージェントは案を作るところまで。送信・確定・提出は人の操作を必ず経由します。デモ中の「承認して続行」が、実装でも同じ位置に入ります。</p></div>
+        <div class="gov-item"><h4>監査証跡</h4><p>各実行で「いつ・どのデータを参照し・誰が何を承認したか」を記録します。実行画面の「監査証跡」を開くと、その回の記録が見られます。</p></div>
+        <div class="gov-item"><h4>止まる条件</h4><p>確信度が基準を下回る／補完データがない／社内基準を外れる場合は自動処理を中止します。しきい値は業務ごとに御社が設定します。</p></div>
+        <div class="gov-item"><h4>データの置き場所</h4><p>実装時は、参照データの保存先・保持期間・アクセス権限を業務ごとに定義します。学習への二次利用の可否も契約で明示します。</p></div>
+        <div class="gov-item"><h4>権限管理</h4><p>エージェントに渡す権限は業務単位で最小化します（読み取りのみ／下書き作成のみ、など）。送信権限は原則として渡しません。</p></div>
+        <div class="gov-item"><h4>このデモの構成</h4><p>単一HTMLファイル。外部通信・外部送信は一切ありません。閉域網のPCでもそのまま動きます。入力した数値もブラウザ内に留まります。</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta" id="hubCta">
+    <h4>自社の業務で試すには</h4>
+    <p>このデモは設計済みシナリオの再生です。実務で使えるかは、御社の実データ10件で精度を測るところから判断できます。まずは無料のAI実装診断で、どの業務から手を付けるかを決めます。</p>
+    <div class="acts">
+      <button class="cta-btn" type="button" data-cta="hub-shindan">AI実装診断を試す（デモ）</button>
+      <button class="cta-btn ghost" type="button" data-cta="hub-halt">AIが止まる場面を見る</button>
+    </div>
+  </div>
+
   <div class="note">
-    <b>本デモの位置づけ</b> — 登場する企業名・数値・帳票はすべて説明用のサンプルです。実在の企業・取引とは関係ありません。
-    エージェントの処理は事前設計したシナリオを再生しています（外部通信なし・オフライン動作）。
+    <b>本デモの位置づけ</b> — 登場する企業名・数値・帳票はすべて架空のサンプルです。実在の企業・取引とは関係ありません。
+    エージェントの処理は事前設計したシナリオを再生しています（<b>外部通信なし・オフライン動作</b>）。
     実際の削減効果は業務内容・データ整備状況により異なります。
   </div>
 </main>
@@ -562,7 +733,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
         <p id="runSub">—</p>
       </div>
       <div class="rb-div"></div>
-      <div class="clocks">
+      <div class="clocks" id="clocks">
         <div class="clock base"><em>従来</em><b class="num" id="clkBase">—</b></div>
         <div class="clock ai"><em>AIエージェント</em><b class="num" id="clkAi">0.0秒</b></div>
       </div>
@@ -607,12 +778,29 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
             <h3>成果物</h3>
             <span class="tag">Output</span>
           </div>
-          <div class="pane-body" id="outPane"></div>
+          <div class="pane-body">
+            <div class="print-only" id="printHd"></div>
+            <div id="outPane"></div>
+            <div class="outacts">
+              <button class="sbtn" id="printBtn" type="button">印刷 / PDF保存</button>
+              <button class="sbtn" id="linkBtn" type="button">このシナリオのリンクをコピー</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="audit" id="audit">
+          <button class="audit-hd" type="button" id="auditHd">
+            <h4>監査証跡</h4>
+            <span class="cnt" id="auCnt">0</span>
+            <span class="chev2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+          </button>
+          <div class="audit-bd" id="auBody"></div>
         </div>
 
         <div class="results" id="results">
           <div class="res-grid" id="resGrid"></div>
-          <div class="bars">
+
+          <div class="bars" id="bars">
             <h4>所要時間の比較（1件あたり）</h4>
             <div class="bar-row">
               <em>従来</em>
@@ -625,6 +813,29 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
               <b id="barAiTxt">—</b>
             </div>
           </div>
+
+          <div class="roi" id="roi">
+            <h4>御社の数字で試算する</h4>
+            <p class="sub">この業務の件数と、担当者の人件費単価を入れてください。入力した値はこの端末のブラウザ内だけで計算され、どこにも送信されません。</p>
+            <div class="roi-in">
+              <div class="roi-f"><label for="roiCnt" id="roiCntLab">月あたりの件数</label>
+                <div class="box"><input type="number" id="roiCnt" min="0" step="1" inputmode="numeric"><span>件</span></div></div>
+              <div class="roi-f"><label for="roiRate">人件費 時給換算</label>
+                <div class="box"><input type="number" id="roiRate" min="0" step="100" inputmode="numeric"><span>円</span></div></div>
+              <div class="roi-f"><label for="roiBase">従来の所要時間 / 件</label>
+                <div class="box"><input type="number" id="roiBase" min="0" step="1" inputmode="numeric"><span>分</span></div></div>
+              <div class="roi-f"><label for="roiAi">AI＋承認の所要時間 / 件</label>
+                <div class="box"><input type="number" id="roiAi" min="0" step="1" inputmode="numeric"><span>分</span></div></div>
+            </div>
+            <div class="roi-out">
+              <div class="roi-o"><em>削減時間 / 月</em><b id="roiHrs">—</b><small id="roiHrsSub">&nbsp;</small></div>
+              <div class="roi-o hl"><em>削減額 / 月</em><b id="roiMon">—</b><small>人件費換算</small></div>
+              <div class="roi-o hl"><em>削減額 / 年</em><b id="roiYear">—</b><small>12か月換算</small></div>
+              <div class="roi-o"><em>人数換算</em><b id="roiFte">—</b><small>月160時間を1人分として</small></div>
+            </div>
+            <p class="roi-note" id="roiNote"></p>
+          </div>
+
           <div class="nextbox">
             <h4 id="nextTitle">次の一歩</h4>
             <p id="nextBody"></p>
@@ -633,10 +844,20 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
               <button class="cbtn" id="nextAgain" type="button">同じ業務をもう一度</button>
             </div>
           </div>
+
+          <div class="cta">
+            <h4>ここから先は、御社のデータで確かめる工程です</h4>
+            <p>いま見ていただいたのは設計済みシナリオの再生です。実務で使えるかどうかは、御社の実データ10件で精度を測れば判断できます。診断（1〜2週間）→ 優先業務の選定 → 90日PoC、という順で進めます。</p>
+            <div class="acts">
+              <button class="cta-btn" type="button" data-cta="run-shindan">無料のAI実装診断を試す</button>
+              <button class="cta-btn ghost" type="button" data-cta="run-halt" id="ctaGhost">AIが止まる場面も見る</button>
+            </div>
+          </div>
         </div>
 
         <p class="disclaimer">
-          企業名・数値はサンプルです。削減時間は当該業務の一般的な手作業工数を想定した参考値であり、効果を保証するものではありません。
+          企業名・数値・帳票はすべて架空のサンプルです。削減時間は当該業務の一般的な手作業工数を想定した参考値であり、効果を保証するものではありません。
+          実際の効果は業務内容・データ整備状況により異なります。
         </p>
       </section>
     </div>
@@ -653,8 +874,8 @@ const yen = n => '¥' + n.toLocaleString('ja-JP');
 /* ---------------------------------------------------------------- 1. 見積 */
 const QUOTE_V = [
   { id:'metal', label:'金属部品 製造', chip:'製造業 120名',
-    co:'東和精密工業株式会社', coSub:'愛知県／金属部品加工／従業員120名',
-    from:'川崎機械工業株式会社 購買部 佐藤',
+    co:'サンプル精密工業株式会社', coSub:'愛知県／金属部品加工／従業員120名',
+    from:'デモ機械工業株式会社 購買部 佐藤',
     subj:'【見積依頼】SUS304 六角ボルト M8×40 の件',
     mail:'いつもお世話になっております。\n下記につきお見積りをお願いいたします。\n図面を添付します。数量・納期は必達でお願いします。\n\n・SUS304 六角ボルト M8×40（JIS B1180）\n・2,400本\n・無電解ニッケルめっき\n・希望納期 2026/10/20',
     attach:'図面_KM-2246_rev3.pdf（3.2MB）',
@@ -674,11 +895,11 @@ const QUOTE_V = [
     baseName:'見積作成（仕様読取〜原価積算〜作成）' },
 
   { id:'food', label:'食品 卸売', chip:'卸売業 45名',
-    co:'丸中食品卸株式会社', coSub:'香川県／食品卸／従業員45名',
-    from:'株式会社スーパーやまと バイヤー 田村',
+    co:'サンプル食品卸株式会社', coSub:'香川県／食品卸／従業員45名',
+    from:'株式会社スーパーサンプル バイヤー 田村',
     subj:'秋の讃岐うどんフェア 発注のお見積り',
     mail:'お世話になります。\n10月フェア分の見積をお願いします。全12店舗、センター一括納品です。\n\n・冷凍讃岐うどん 200g×30食入\n・480ケース\n・納品 2026/09/18（センター）\n・チラシ掲載のため単価を確定させたい',
-    attach:'発注票_やまと_202609.pdf（1.1MB）',
+    attach:'発注票_スーパーサンプル_202609.pdf（1.1MB）',
     item:'冷凍讃岐うどん 200g×30食入', qty:'480 ケース', due:'2026/09/18 センター一括',
     spec:'フェア特売品／チラシ掲載あり',
     past:'2025/10 フェア 360ケース 単価 ¥2,540', stock:'210 ケース', short:'270 ケース',
@@ -695,8 +916,8 @@ const QUOTE_V = [
     baseName:'フェア見積（発注票読取〜在庫調整〜作成）' },
 
   { id:'kenzai', label:'建設資材 商社', chip:'商社 68名',
-    co:'北陸建材商事株式会社', coSub:'石川県／建設資材商社／従業員68名',
-    from:'大和土建株式会社 工事部 山本',
+    co:'サンプル建材商事株式会社', coSub:'石川県／建設資材商社／従業員68名',
+    from:'デモ土建株式会社 工事部 山本',
     subj:'【見積依頼】異形棒鋼 D13 12t（金沢市 現場渡し）',
     mail:'お世話になります。金沢市内の現場分です。\n\n・異形棒鋼 D13 SD295A 5.5m\n・12.0t\n・現場渡し（金沢市／10月上旬）\n・ミルシート添付必須\n至急ご提示ください。',
     attach:'配筋図_KZ-08.pdf（5.4MB）',
@@ -739,9 +960,9 @@ const SC_QUOTE = {
 /* ---------------------------------------------------------------- 2. 診断 */
 const SHINDAN_V = [
   { id:'service', label:'サービス業 50名', chip:'サービス業',
-    co:'株式会社ミナトコンサルティング', coSub:'サービス業／従業員50名／年商8.2億円',
-    from:'城北信用金庫 法人推進部 渉外担当',
-    subj:'AI活用診断のご依頼（ミナトコンサルティング様）',
+    co:'サンプルコンサルティング株式会社', coSub:'サービス業／従業員50名／年商8.2億円',
+    from:'サンプル信用金庫 法人推進部 渉外担当',
+    subj:'AI活用診断のご依頼（サンプルコンサルティング様）',
     mail:'先方社長との面談メモを共有します。\n「AIは触っているが業務が変わった実感がない」とのこと。\n決算概要と業務一覧も添付しました。診断をお願いします。',
     attach:'面談メモ_20260903.txt / 業務一覧.xlsx / 決算概要.pdf',
     stage:'段階2（ツール移行）', bench:'サービス業 47.8%（全国平均 32.4%）',
@@ -755,9 +976,9 @@ const SHINDAN_V = [
     baseName:'AI活用診断レポートの作成' },
 
   { id:'mfg', label:'製造業 120名', chip:'製造業',
-    co:'大和金属加工株式会社', coSub:'製造業／従業員120名／年商21.4億円',
-    from:'東海商工中金 支店 渉外担当',
-    subj:'AI活用診断のご依頼（大和金属加工様）',
+    co:'サンプル金属加工株式会社', coSub:'製造業／従業員120名／年商21.4億円',
+    from:'サンプル地方銀行 法人営業部 渉外担当',
+    subj:'AI活用診断のご依頼（サンプル金属加工様）',
     mail:'工場長・管理部長との面談メモです。\n「生成AIは総務が試したが現場に降りていない」。\n見積と品質不良の対応に時間がかかっているとのこと。',
     attach:'面談メモ_20260902.txt / 業務一覧.xlsx / 決算概要.pdf',
     stage:'段階2（ツール移行）', bench:'製造業 33.0%（全国平均 32.4%）',
@@ -771,9 +992,9 @@ const SHINDAN_V = [
     baseName:'AI活用診断レポートの作成' },
 
   { id:'retail', label:'小売 80名', chip:'小売業',
-    co:'株式会社フレッシュマート城北', coSub:'小売業／6店舗／従業員80名／年商14.6億円',
-    from:'城北信用金庫 法人推進部 渉外担当',
-    subj:'AI活用診断のご依頼（フレッシュマート城北様）',
+    co:'株式会社サンプルマート', coSub:'小売業／6店舗／従業員80名／年商14.6億円',
+    from:'サンプル信用金庫 法人推進部 渉外担当',
+    subj:'AI活用診断のご依頼（サンプルマート様）',
     mail:'社長・店舗運営部長との面談メモです。\n人手不足が深刻で、発注業務が店長の残業要因になっています。\nPOSデータはあるが活用できていないとのこと。',
     attach:'面談メモ_20260901.txt / 業務一覧.xlsx / 決算概要.pdf',
     stage:'段階2（ツール移行）', bench:'小売業 31.5%（全国平均 32.4%）',
@@ -810,10 +1031,10 @@ const SC_SHINDAN = {
 /* ---------------------------------------------------------------- 3. 議事録 */
 const MEET_V = [
   { id:'consult', label:'BtoBコンサル', chip:'サービス業',
-    co:'株式会社ミナトコンサルティング', coSub:'商談録音 42分／出席3名',
-    from:'商談：中央フーズ株式会社 経営企画部',
+    co:'サンプルコンサルティング株式会社', coSub:'商談録音 42分／出席3名',
+    from:'商談：サンプルフーズ株式会社 経営企画部',
     subj:'次期基幹刷新の進め方 相談（2回目）',
-    mail:'録音 42分（話者3名）\nカレンダー予定「中央フーズ様 定例②」\n前回議事録・提案書v2 を参照可能',
+    mail:'録音 42分（話者3名）\nカレンダー予定「サンプルフーズ様 定例②」\n前回議事録・提案書v2 を参照可能',
     attach:'商談録音_20260904.m4a（42分18秒）',
     words:'12,400字', spk:'3名（自社1／先方2）',
     dec:['次期基幹はフルスクラッチではなくSaaS前提で検討','11月の役員会に諮る前提でスケジュールを引く','現行の受注入力業務は先行して切り出す'],
@@ -824,10 +1045,10 @@ const MEET_V = [
     baseName:'議事録作成とCRM入力' },
 
   { id:'staffing', label:'人材サービス', chip:'サービス業',
-    co:'株式会社ワークブリッジ', coSub:'商談録音 38分／出席3名',
-    from:'商談：北関東製作所 人事部',
+    co:'サンプル人材サービス株式会社', coSub:'商談録音 38分／出席3名',
+    from:'商談：サンプル製作所 人事部',
     subj:'技術系中途採用の支援について',
-    mail:'録音 38分（話者3名）\nカレンダー予定「北関東製作所様 初回訪問」\n求人票ドラフト・料金表を参照可能',
+    mail:'録音 38分（話者3名）\nカレンダー予定「サンプル製作所様 初回訪問」\n求人票ドラフト・料金表を参照可能',
     attach:'商談録音_20260904.m4a（38分04秒）',
     words:'10,900字', spk:'3名（自社1／先方2）',
     dec:['機械設計3名・生産技術2名を年内充足で進める','紹介手数料は理論年収の30%で合意方向','まず機械設計から着手する'],
@@ -838,14 +1059,14 @@ const MEET_V = [
     baseName:'議事録作成とCRM入力' },
 
   { id:'tax', label:'税理士法人', chip:'士業',
-    co:'税理士法人あおば会計', coSub:'面談録音 45分／出席3名',
-    from:'面談：株式会社ヤマト運送機工（顧問先）',
+    co:'税理士法人サンプル会計', coSub:'面談録音 45分／出席3名',
+    from:'面談：サンプル運送機工株式会社（顧問先）',
     subj:'事業承継と設備投資の相談',
-    mail:'録音 45分（話者3名）\nカレンダー予定「ヤマト運送機工様 月次」\n前期決算・試算表を参照可能',
+    mail:'録音 45分（話者3名）\nカレンダー予定「サンプル運送機工様 月次」\n前期決算・試算表を参照可能',
     attach:'面談録音_20260904.m4a（45分32秒）',
-    words:'13,100字', spk:'3名（当法人1／先方2）',
-    dec:['自社株評価を先に実施し、承継スキームは評価後に判断','設備投資（車両6台）は来期期首で検討','月次の資金繰り表を当法人で作成する'],
-    todo:[['自社株評価に必要な資料リストの提示','当法人','9/10'],['株主名簿と直近3期の申告書の提供','先方','9/19'],['車両更新計画の概算資料','先方','9/26'],['資金繰り表フォーマットの提示','当法人','9/12']],
+    words:'13,100字', spk:'3名（当事務所1／先方2）',
+    dec:['自社株評価を先に実施し、承継スキームは評価後に判断','設備投資（車両6台）は来期期首で検討','月次の資金繰り表を当事務所で作成する'],
+    todo:[['自社株評価に必要な資料リストの提示','当事務所','9/10'],['株主名簿と直近3期の申告書の提供','先方','9/19'],['車両更新計画の概算資料','先方','9/26'],['資金繰り表フォーマットの提示','当事務所','9/12']],
     risk:['後継者（長男）本人の意向確認がまだ。ここが最大の不確定要素','設備投資と承継対策の資金需要が同時期に重なる'],
     money:'車両6台 概算 4,800万円の設備投資に言及',
     phase:'相談 → 提案準備', prob:'—（顧問先）', nextdate:'2026/10/02（木）14:00',
@@ -875,7 +1096,7 @@ const SC_MEET = {
 /* ---------------------------------------------------------------- 4. 現場 */
 const FIELD_V = [
   { id:'kensetsu', label:'総合建設', chip:'建設業',
-    co:'北信建設株式会社', coSub:'現場：長野市 A棟新築工事／作業員14名',
+    co:'サンプル建設株式会社', coSub:'現場：長野市 A棟新築工事／作業員14名',
     from:'現場代理人 上田',
     subj:'9/4 現場報告（写真6枚＋音声メモ）',
     mail:'現場から写真6枚と音声メモが届いています。\n「2階の型枠、8割方終わり。明日中には配筋に入れる。\n 生コンは来週火曜で押さえた。あと南側の足場、\n 一部単管が緩んでたんで是正済み。」',
@@ -888,7 +1109,7 @@ const FIELD_V = [
     baseName:'現場日報の作成と提出書類化' },
 
   { id:'butsuryu', label:'物流 / 運輸', chip:'運輸・倉庫',
-    co:'中央ロジスティクス株式会社', coSub:'配送センター：埼玉／車両22台',
+    co:'サンプル物流株式会社', coSub:'配送センター：埼玉／車両22台',
     from:'配車担当 森',
     subj:'9/4 日次運行報告（写真6枚＋音声メモ）',
     mail:'ドライバーから写真6枚と音声メモが届いています。\n「3号車、東北道の事故渋滞で1時間40分の遅れ。\n 納品先には連絡済み。パレット2枚が角破損してた、\n 写真撮ってある。返品処理お願いします。」',
@@ -901,7 +1122,7 @@ const FIELD_V = [
     baseName:'運行日報の作成と返品処理起票' },
 
   { id:'setsubi', label:'設備 / 保全', chip:'設備工事',
-    co:'関西設備工業株式会社', coSub:'現場：大阪市 商業施設 空調更新工事',
+    co:'サンプル設備工業株式会社', coSub:'現場：大阪市 商業施設 空調更新工事',
     from:'工事担当 中村',
     subj:'9/4 施工報告（写真6枚＋音声メモ）',
     mail:'現場から写真6枚と音声メモが届いています。\n「3階の室内機、6台中4台の据付完了。\n 冷媒配管は明日から。既設のドレン配管に\n 勾配不足があったんで、施主に確認したい。」',
@@ -934,14 +1155,87 @@ const SC_FIELD = {
   next:{t:'記録が残ることの価値',b:'日報は「書く時間」だけの問題ではありません。安全指摘や是正の記録が確実に残ることが、事故時の説明責任と元請への信頼につながります。写真と音声を送るだけ、という現場側の負担の軽さが定着の条件です。'}
 };
 
-const SCENARIOS = [SC_QUOTE, SC_SHINDAN, SC_MEET, SC_FIELD];
+
+
+/* ------------------------------------------------- 5. 限界ケース（停止） */
+const HALT_V = [
+  { id:'blur', label:'図面が読めない', chip:'製造 / 見積',
+    co:'サンプル精密工業株式会社', coSub:'愛知県／金属部品加工／従業員120名',
+    from:'デモ機械工業株式会社 購買部 佐藤',
+    subj:'【至急】カスタム治具一式 お見積り',
+    mail:'急ぎで見積をお願いします。\n手書き図面をスキャンしたものを添付します。\n公差は図面の通りでお願いします。\n明日中にいただけると助かります。',
+    attach:'図面_手書きスキャン_KM-3310.jpg（1.8MB／解像度 96dpi）',
+    conf:'52%', thr:'70%',
+    unread:['公差指示（3箇所）— 手書きが潰れて ±0.05 か ±0.06 か判別不能',
+            '材質記号の一部 — 「S45C」か「S48C」か判読不能',
+            '数量 — 「12」の後に何か書かれているが解読不能'],
+    read:['外形寸法 4箇所（判読可）','表面粗さ指示 Ra3.2（判読可）','希望納期 明日中（本文より）'],
+    risk:'公差を ±0.05 と誤って読むと、加工方法が研削になり原価が約1.7倍。誤った単価で受注すると赤字案件になります。',
+    guess:'推測で ±0.05 として見積を作成すると、この案件では原価を約41%過小に見積もり、受注後に赤字が確定します。実際にはAIは推測しません。',
+    ask:['公差指示（図面①②③箇所）の正確な値','材質記号（S45C / S48C のいずれか）','数量（12個で確定か、追加桁があるか）'],
+    outTitle:'処理保留通知', outSub:'見積書は作成していません' },
+
+  { id:'novel', label:'前例のない条件', chip:'金融機関 / 診断',
+    co:'サンプル製造株式会社', coSub:'製造業／従業員95名／海外子会社1社',
+    from:'サンプル信用金庫 法人推進部 渉外担当',
+    subj:'AI活用診断のご依頼（海外子会社を含む案件）',
+    mail:'取引先から相談を受けました。\n海外子会社との間の資金移動と、\nそれに伴う社内管理のDXを一緒に見てほしいとのことです。\n診断をお願いします。',
+    attach:'面談メモ_20260906.txt / 決算概要.pdf / 組織図.pdf',
+    conf:'—', thr:'業務範囲の判定',
+    unread:['海外子会社との資金移動 — 移転価格税制・外為法の判断を含む',
+            '国をまたぐ個人データの取扱い — 各国法令の確認が必要',
+            'グループ間取引の会計処理 — 会計士・税理士の領域'],
+    read:['国内側の業務棚卸し 12業務（診断可能）','国内の生成AI活用状況（診断可能）','社内管理システムの現状（診断可能）'],
+    risk:'税務・外為の判断を誤ると、取引先に追徴課税や行政指導のリスクが生じます。金融機関が提示した資料としての責任も問われます。',
+    guess:'一般論で「問題ありません」と答えると、金融機関が誤った助言をしたことになります。実際にはAIは判断しません。',
+    ask:['移転価格・外為法の該否 → 税理士／弁護士へ照会','越境個人データの取扱い → 専門家の確認','会計処理方針 → 顧問会計士の確認'],
+    outTitle:'AI実装カルテ（部分）', outSub:'国内業務のみ／海外部分は判断保留' },
+
+  { id:'audio', label:'聞き取れない・矛盾', chip:'サービス / 議事録',
+    co:'サンプルコンサルティング株式会社', coSub:'商談録音 51分／出席4名',
+    from:'商談：サンプルフーズ株式会社 経営企画部',
+    subj:'次期基幹刷新の進め方 相談（3回目）',
+    mail:'録音 51分（話者4名）\n会議室の空調が強く、後半にノイズが入っています。\n前回議事録・提案書v3 を参照可能',
+    attach:'商談録音_20260906.m4a（51分04秒／後半にノイズ）',
+    conf:'61%', thr:'70%',
+    unread:['31分06秒〜31分52秒 — 空調ノイズで音声が欠落（約46秒）',
+            '金額の発言が2回あり、内容が食い違う（「3,000万」と「3,800万」）',
+            '同時発話が3箇所。誰の発言か特定できない'],
+    read:['決定事項 2件（複数話者が明確に同意）','宿題 4件（担当・期限とも明確）','次回日程（明確）'],
+    risk:'金額を一方に決め打ちして議事録を出すと、後日「言った・言わない」の争点になります。議事録は社内で証跡として扱われます。',
+    guess:'新しい方の「3,800万」を採用して確定させると、先方が「3,000万と言った」と認識していた場合、議事録が争いの火種になります。実際にはAIは確定させません。',
+    ask:['31分台の欠落部分 — 出席者に内容の確認','金額 3,000万 / 3,800万 のいずれが正か','同時発話3箇所の発言者'],
+    outTitle:'商談議事録（未確定あり）', outSub:'確定部分のみ記載／3箇所は要確認' }
+];
+
+const SC_HALT = {
+  id:'halt', kicker:'限界ケース / 品質保証', title:'AIが「できない」と止まるとき',
+  desc:'成功例だけを並べたデモは信用されません。読み取れないとき、前例がないとき、発言が食い違うとき、エージェントは推測で埋めずに手を止め、何が分からないかを具体的に示して人に渡します。誤った成果物を出さないための設計をそのまま見せます。',
+  tags:['ガバナンス','リスク管理','金融機関向け','審査部門向け'], icon:'alert',
+  noRoi:true, baseMin:0, aiMin:0, monthly:0,
+  variants:HALT_V,
+  out:v=>({
+    title:v.outTitle, sub:v.outSub,
+    fields:[['判定','verdict'],['確信度 / 基準','conf'],['処理できた範囲','okpart'],['処理を止めた理由','why'],['引き継ぎ先','to'],['ステータス','status']],
+    bullets:true
+  }),
+  res:v=>[
+    {t:'誤った成果物の送付',v:'0',u:'件',s:'推測で埋めずに停止',hl:true},
+    {t:'確信度しきい値',v:v.thr,u:'',s:'下回れば必ず人へ'},
+    {t:'処理できた範囲',v:String(v.read.length),u:'項目',s:'ここまでは自動で進む'},
+    {t:'人への引き継ぎ',v:String(v.ask.length),u:'件',s:'確認事項を具体化して渡す'}
+  ],
+  next:{t:'ここが導入判断の分かれ目',b:'「AIは何を間違えるのか」に答えられない提案は、審査・リスク部門で止まります。確信度のしきい値、止まったときの引き継ぎ先、誰が最終責任を持つか——この3点を設計に含めることが、PoCを本番に乗せる条件です。しきい値は業務ごとに御社が決めます。'}
+};
+
+const SCENARIOS = [SC_QUOTE, SC_SHINDAN, SC_MEET, SC_FIELD, SC_HALT];
 
 /* ================================================================ 実行脚本 */
 const STEPS = {
 
 quote: v => [
   { t:'営業窓口の受信箱に新しい見積依頼が届きました。添付が1件あります。',
-    tools:[{n:'mail.watch', a:'mailbox: "sales@'+'toyo-seimitsu.co.jp"', o:'新着 1件\n差出人: '+v.from+'\n件名: '+v.subj+'\n添付: '+v.attach}], ms:1500 },
+    tools:[{n:'mail.watch', a:'mailbox: "sales@'+'sample-seimitsu.co.jp"', o:'新着 1件\n差出人: '+v.from+'\n件名: '+v.subj+'\n添付: '+v.attach}], ms:1500 },
 
   { t:'本文と添付を読んで、見積に必要な項目を取り出します。',
     tools:[{n:'doc.extract', a:'file: "'+v.attach.split('（')[0]+'", body: mail', o:'品目: '+v.item+'\n数量: '+v.qty+'\n納期: '+v.due+'\n仕様: '+v.spec}],
@@ -1135,6 +1429,62 @@ field: v => [
 ]
 };
 
+STEPS.halt = v => [
+  { t:'依頼を受領しました。いつも通り、まず中身を読みにいきます。',
+    tools:[{n:'inbox.receive', a:'source: "'+v.from.split(' ')[0]+'"', o:'件名: '+v.subj+'\n添付: '+v.attach}],
+    fill:{status:'処理中', conf:'測定中'}, ms:1600 },
+
+  { t:'内容を抽出します。ここで、抽出結果の確信度も同時に測ります。',
+    tools:[{n:'doc.extract', a:'with_confidence: true, threshold: "'+v.thr+'"',
+            o:'確信度: '+v.conf+'\n基準: '+v.thr+'\n判定: 基準未達 — 自動処理を継続しません'}],
+    find:{x:'確信度 <b>'+v.conf+'</b>（基準 '+v.thr+'）。<b>基準を下回りました。</b>', warn:true},
+    fill:{conf:v.conf+' / 基準 '+v.thr}, ms:2500 },
+
+  { t:'まず、確実に処理できた範囲を切り分けます。ここは自動で進みます。',
+    bul:v.read.map(x=>[x,false]),
+    fill:{okpart:v.read.length+'項目（下記）'}, ms:2200 },
+
+  { t:'次に、処理できなかった箇所を1つずつ特定します。曖昧なままにしません。',
+    bul:v.unread.map(x=>[x,true]),
+    find:{x:'処理できない箇所を <b>'+v.unread.length+'件</b> 特定しました。', warn:true}, ms:2700 },
+
+  { t:'過去データで補えないか照会します。似た案件があれば推定に使えます。',
+    tools:[{n:'history.search', a:'similar_case, same_customer', o:'類似案件: 該当なし\n同一顧客の過去実績: 参考にできる条件なし\n→ 推定の根拠にできるデータがありません'}],
+    find:{x:'補完できるデータはありませんでした。ここから先は<b>推測になります</b>。', warn:true}, ms:2300 },
+
+  { t:'推測して進めるか、人に渡すか。エージェントの設計思想が出る場所です。',
+    gate:{
+      title:'ここでエージェントは止まります',
+      body:'確信度が基準を下回り、補完データもありません。設計上は人へエスカレーションします。比較のため、あえて推測させた場合に何が起きるかも確認できます。',
+      facts:['確信度 '+v.conf, '基準 '+v.thr, '不明箇所 '+v.unread.length+'件', '補完データ なし'],
+      opts:[{k:'escalate', label:'人にエスカレーションする', primary:true},{k:'guess', label:'あえて推測させたら？'}],
+      then:{
+        escalate:[
+          { t:'設計通り、人に渡す準備をします。', ms:1300,
+            fill:{verdict:'自動処理を中止（設計通り）'} }
+        ],
+        guess:[
+          { t:'仮に推測させた場合、何が起きるかを試算します。',
+            find:{x:v.guess, warn:true},
+            bul:[[v.risk, true]], ms:2800 },
+          { t:'これがAIに推測させることのコストです。設計上はここで止めます。', ms:1600,
+            fill:{verdict:'自動処理を中止（推測は行わない）'} }
+        ]
+      }
+    }, ms:2000 },
+
+  { t:'「分からなかった」ではなく、「何を確認すれば進むか」に変換します。',
+    bul:v.ask.map(x=>[x,false]),
+    fill:{why:'確信度が基準未達／補完データなし'}, ms:2400 },
+
+  { t:'確認事項をそのまま送れる形にして、担当者に引き継ぎます。',
+    tools:[{n:'mail.draft', a:'to: 依頼元, type: "確認依頼"', o:'確認メールの下書きを作成（送信はしていません）\n確認事項 '+v.ask.length+'件を箇条書きで記載'},
+           {n:'task.assign', a:'assignee: 担当者, priority: "高"', o:'担当者にタスクを割当\n期限: 本日中\n添付: 判読不能箇所のマーキング画像'}],
+    fill:{to:'担当者（本日中）', status:'保留 — 人の確認待ち'}, ready:true, ms:2600 },
+
+  { halt:'成果物は作らずに止めました。何が分からないかと、確認すれば進むことが担当者の手元にあります。' }
+];
+
 /* ================================================================== 部品 */
 const SVG = {
   quote:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/>',
@@ -1145,7 +1495,8 @@ const SVG = {
   chev:'<path d="M9 18l6-6-6-6"/>',
   arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
   clip:'<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
-  alert:'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/>'
+  alert:'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/>',
+  stop:'<circle cx="12" cy="12" r="9"/><path d="M9 9h6v6H9z"/>'
 };
 const ico = (k, w) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||1.8)+'" stroke-linecap="round" stroke-linejoin="round">'+SVG[k]+'</svg>';
 const el = (h) => { const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.firstElementChild; };
@@ -1164,72 +1515,124 @@ SCENARIOS.forEach(sc=>{
     '<button class="pick" type="button" data-sc="'+sc.id+'" data-v="'+v.id+'">'+
       esc(v.label)+'<span class="pick-arrow">'+ico('arrow',2.2)+'</span></button>').join('');
   cardsEl.appendChild(el(
-    '<article class="card">'+
+    '<article class="card'+(sc.noRoi?' limit':'')+'">'+
       '<div class="card-top">'+
         '<div class="card-ico">'+ico(sc.icon)+'</div>'+
         '<div><div class="card-kicker">'+esc(sc.kicker)+'</div><h3>'+esc(sc.title)+'</h3></div>'+
       '</div>'+
       '<p class="card-desc">'+esc(sc.desc)+'</p>'+
       '<div class="card-meta">'+sc.tags.map(t=>'<span class="pill">'+esc(t)+'</span>').join('')+'</div>'+
-      '<div class="card-pick"><div class="pick-label">業種を選ぶと、その場で動き出します</div>'+
-      '<div class="pick-row">'+picks+'</div></div>'+
+      '<div class="card-pick"><div class="pick-label">'+
+        (sc.noRoi?'ケースを選ぶと、その場で止まるところまで見られます':'業種を選ぶと、その場で動き出します')+
+      '</div><div class="pick-row">'+picks+'</div></div>'+
     '</article>'));
 });
 
 /* ================================================================ 状態 */
 const $ = id => document.getElementById(id);
-let st = { token:0, paused:false, speed:1, sc:null, v:null, t0:0, timer:null, elapsed:0 };
+let st = { token:0, paused:false, speed:1, sc:null, v:null, t0:0, timer:null, elapsed:0, audit:[], nav:false };
 
+/* rAF ベースの待機 — 速度倍率と一時停止が実際に効く */
 function wait(ms){
   const token = st.token;
-  return new Promise((resolve,reject)=>{
-    let remain = ms;
-    const iv = setInterval(()=>{
-      if(st.token !== token){ clearInterval(iv); reject(new Error('abort')); return; }
-      if(st.paused) return;
-      remain -= 40 * st.speed;
-      if(remain <= 0){ clearInterval(iv); resolve(); }
-    }, 40);
+  return new Promise((resolve, reject)=>{
+    let remain = ms, last = performance.now();
+    const tick = () => {
+      if(st.token !== token){ reject(new Error('abort')); return; }
+      const now = performance.now(), dt = Math.min(now - last, 120); last = now;
+      if(!st.paused) remain -= dt * st.speed;
+      if(remain <= 0){ resolve(); return; }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
   });
 }
 
 function fmtMin(m){
   if(m < 60) return m + '分';
-  const h = Math.floor(m/60), r = m%60;
+  const h = Math.floor(m/60), r = Math.round(m%60);
   return h + '時間' + (r ? r+'分' : '');
+}
+const fmtYen = n => '¥' + Math.round(n).toLocaleString('ja-JP');
+function fmtYenBig(n){
+  if(n >= 100000000) return (n/100000000).toFixed(2).replace(/\.?0+$/,'') + '億円';
+  if(n >= 10000) return (n/10000).toFixed(n>=1000000?0:1).replace(/\.0$/,'') + '万円';
+  return Math.round(n).toLocaleString('ja-JP') + '円';
+}
+
+/* ============================================================ 監査証跡 */
+function audit(kind, text){
+  const t = new Date();
+  const hh = String(t.getHours()).padStart(2,'0'), mm = String(t.getMinutes()).padStart(2,'0'),
+        ss = String(t.getSeconds()).padStart(2,'0');
+  st.audit.push({t:hh+':'+mm+':'+ss, kind, text});
+  const body = $('auBody');
+  if(body) body.appendChild(el('<div class="au k-'+kind+'"><time>'+hh+':'+mm+':'+ss+'</time><span class="ev">'+text+'</span></div>'));
+  const c = $('auCnt'); if(c) c.textContent = st.audit.length;
 }
 
 /* ============================================================ 画面遷移 */
-function openRun(scId, vId){
+function openRun(scId, vId, push){
   const sc = SCENARIOS.find(s=>s.id===scId);
-  const v  = sc.variants.find(x=>x.id===vId);
-  st.token++; st.sc=sc; st.v=v; st.paused=false; st.elapsed=0;
+  if(!sc) return;
+  const v = sc.variants.find(x=>x.id===vId) || sc.variants[0];
+  st.token++; st.sc=sc; st.v=v; st.paused=false; st.elapsed=0; st.audit=[];
   $('hub').classList.add('off'); $('run').classList.add('on');
   window.scrollTo(0,0);
   $('runTitle').textContent = sc.title;
   $('runSub').textContent = v.chip + '　|　' + v.co + '（' + v.coSub + '）';
-  $('clkBase').textContent = fmtMin(sc.baseMin);
+  $('clocks').style.display = sc.noRoi ? 'none' : '';
+  $('clkBase').textContent = sc.noRoi ? '—' : fmtMin(sc.baseMin);
   $('clkAi').textContent = '0.0秒';
   $('pauseBtn').textContent = '一時停止'; $('pauseBtn').disabled = false;
   $('results').classList.remove('on');
   $('prog').style.width = '0%';
+  $('auBody').innerHTML = ''; $('auCnt').textContent = '0'; $('audit').classList.remove('open');
+  $('linkBtn').textContent = 'このシナリオのリンクをコピー'; $('linkBtn').classList.remove('done');
+  $('printHd').innerHTML = '<h1>'+esc(sc.out(v).title)+'</h1><p>'+esc(v.co)+'　／　'+
+    esc(sc.title)+'（デモ用サンプル・実在の企業や取引とは関係ありません）</p>';
   renderInput(sc, v); renderOutput(sc, v);
   $('feed').innerHTML = '';
+  audit('run', '実行を開始 — <b>'+esc(sc.title)+'</b>／'+esc(v.label)+'（実行ID '+runId()+'）');
+  if(push !== false){
+    const h = '#'+sc.id+'/'+v.id;
+    if(location.hash !== h){ st.nav=true; history.pushState({sc:sc.id,v:v.id}, '', h); st.nav=false; }
+  }
   run(sc, v);
 }
-function backToHub(){
+function runId(){
+  return 'RUN-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' +
+    Math.random().toString(36).slice(2,6).toUpperCase();
+}
+function backToHub(push){
   st.token++; stopTimer();
   $('run').classList.remove('on'); $('hub').classList.remove('off');
   window.scrollTo(0,0);
+  if(push !== false && location.hash){ st.nav=true; history.pushState({}, '', location.pathname); st.nav=false; }
 }
+function applyHash(push){
+  const m = (location.hash||'').replace('#','').split('/');
+  if(m[0] && SCENARIOS.some(s=>s.id===m[0])) openRun(m[0], m[1], false);
+  else backToHub(false);
+}
+window.addEventListener('popstate', ()=>{ if(!st.nav) applyHash(false); });
+
 document.addEventListener('click', e=>{
   const p = e.target.closest('.pick');
-  if(p) openRun(p.dataset.sc, p.dataset.v);
+  if(p){ openRun(p.dataset.sc, p.dataset.v); return; }
+  const c = e.target.closest('[data-cta]');
+  if(c){
+    const k = c.dataset.cta;
+    if(k.endsWith('shindan')) openRun('shindan', 'service');
+    else if(k.endsWith('halt')) openRun('halt', 'blur');
+    else if(k.endsWith('quote')) openRun('quote', 'metal');
+    return;
+  }
 });
-$('backBtn').onclick = backToHub;
-$('nextOther').onclick = backToHub;
-$('againBtn').onclick = () => openRun(st.sc.id, st.v.id);
-$('nextAgain').onclick = () => openRun(st.sc.id, st.v.id);
+$('backBtn').onclick = () => backToHub();
+$('nextOther').onclick = () => backToHub();
+$('againBtn').onclick = () => openRun(st.sc.id, st.v.id, false);
+$('nextAgain').onclick = () => openRun(st.sc.id, st.v.id, false);
 $('pauseBtn').onclick = () => {
   st.paused = !st.paused;
   $('pauseBtn').textContent = st.paused ? '再開' : '一時停止';
@@ -1244,6 +1647,23 @@ $('themeBtn').onclick = () => {
   const dark = cur ? cur==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
   document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
 };
+$('govHd').onclick = () => $('gov').classList.toggle('open');
+$('auditHd').onclick = () => $('audit').classList.toggle('open');
+$('printBtn').onclick = () => window.print();
+$('linkBtn').onclick = () => {
+  const url = location.origin + location.pathname + '#' + st.sc.id + '/' + st.v.id;
+  const done = () => { $('linkBtn').textContent = 'コピーしました'; $('linkBtn').classList.add('done'); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done, ()=>fallback(url, done));
+  } else fallback(url, done);
+};
+function fallback(text, cb){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); cb(); }catch(e){ prompt('このURLをコピーしてください', text); }
+  ta.remove();
+}
 
 /* ============================================================ 入力パネル */
 function renderInput(sc, v){
@@ -1257,7 +1677,8 @@ function renderInput(sc, v){
     '<dl class="co">'+
       '<div class="co-row"><dt>対象企業</dt><dd>'+esc(v.co)+'</dd></div>'+
       '<div class="co-row"><dt>プロフィール</dt><dd>'+esc(v.coSub)+'</dd></div>'+
-      '<div class="co-row"><dt>この業務の従来工数</dt><dd>'+esc(v.baseName)+' '+fmtMin(sc.baseMin)+'</dd></div>'+
+      (sc.noRoi ? '' :
+      '<div class="co-row"><dt>従来工数</dt><dd>'+esc(v.baseName)+'<br>'+fmtMin(sc.baseMin)+'</dd></div>')+
     '</dl>';
 }
 
@@ -1324,9 +1745,13 @@ const scrollFeed = () => { const f=$('feed'); f.scrollTop = f.scrollHeight; };
 
 async function type(node, text){
   const chars = [...text];
-  for(let i=0;i<chars.length;i++){
-    node.textContent += chars[i];
-    if(i % 2 === 0){ scrollFeed(); await wait(18); }
+  let i = 0;
+  while(i < chars.length){
+    const step = Math.max(1, Math.round(2 * st.speed));   /* 速度で1フレームあたりの文字数が変わる */
+    node.textContent += chars.slice(i, i+step).join('');
+    i += step;
+    scrollFeed();
+    await wait(32);
   }
 }
 
@@ -1344,11 +1769,16 @@ async function run(sc, v){
       const s = queue.shift(); n++;
       $('prog').style.width = Math.round(n/total*100) + '%';
 
-      /* 完了ステップ */
-      if(s.done){
-        feed.appendChild(el('<div class="done-line">'+ico('check',2.6)+'<span>'+esc(s.done)+'</span></div>'));
+      /* 完了 / 停止 */
+      if(s.done || s.halt){
+        const isHalt = !!s.halt;
+        feed.appendChild(el('<div class="done-line'+(isHalt?' halt':'')+'">'+
+          ico(isHalt?'stop':'check', isHalt?2:2.6)+'<span>'+esc(s.done||s.halt)+'</span></div>'));
         scrollFeed();
-        finish(sc, v);
+        audit(isHalt?'gate':'out', isHalt
+          ? '<b>自動処理を中止</b>し、担当者へ引き継ぎ。成果物は生成していません'
+          : '<b>成果物を生成</b>し、実行を完了');
+        finish(sc, v, isHalt);
         return;
       }
 
@@ -1376,6 +1806,7 @@ async function run(sc, v){
           tool.querySelector('.spin').outerHTML = '<svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">'+SVG.check+'</svg>';
           tool.querySelector('pre').textContent = t.o;
           tool.classList.add('open');
+          audit('ref', 'データ参照 — <b>'+esc(t.n)+'</b>（'+esc(t.a)+'）');
           scrollFeed();
         }
       } else {
@@ -1392,7 +1823,13 @@ async function run(sc, v){
       if(s.fill) fillSlots(s.fill);
       if(s.rows) addRows(s.rows, tb.cls);
       if(s.bul)  addBullets(s.bul);
-      if(s.ready){ const sp = $('stamp'); if(sp){ sp.textContent='確定'; sp.classList.add('ready'); } }
+      if(s.ready){
+        const sp = $('stamp');
+        if(sp){
+          sp.textContent = sc.noRoi ? '保留' : '確定';
+          sp.classList.add(sc.noRoi ? 'halt' : 'ready');
+        }
+      }
 
       /* 人の承認 */
       if(s.gate){
@@ -1400,6 +1837,7 @@ async function run(sc, v){
         $('liveDot').className = 'dot wait';
         $('conTag').textContent = 'WAITING FOR HUMAN';
         const g = s.gate;
+        audit('gate', '<b>人の判断を要求</b> — '+esc(g.title)+'（自動処理を一時停止）');
         const box = el('<div class="gate"><div class="gate-hd">'+ico('alert',2.2)+
           '<h4>'+esc(g.title)+'</h4></div><p>'+esc(g.body)+'</p>'+
           '<div class="gate-facts">'+g.facts.map(f=>'<span class="gate-fact">'+esc(f)+'</span>').join('')+'</div>'+
@@ -1407,22 +1845,23 @@ async function run(sc, v){
             '" type="button" data-k="'+o.k+'">'+esc(o.label)+'</button>').join('')+'</div>'+
           '<div class="gate-stamp"></div></div>');
         wrap.appendChild(box); scrollFeed();
-        const key = await new Promise((resolve, reject)=>{
+        const chosen = await new Promise((resolve, reject)=>{
           box.querySelectorAll('.gbtn').forEach(b=>{
             b.onclick = () => {
               if(st.token !== token) return;
               box.classList.add('resolved');
-              box.querySelector('.gate-stamp').textContent =
-                '✓ 承認: ' + b.textContent + ' — 担当者 / ' + new Date().toLocaleTimeString('ja-JP');
-              resolve(b.dataset.k);
+              const ts = new Date().toLocaleTimeString('ja-JP');
+              box.querySelector('.gate-stamp').textContent = '✓ 承認: ' + b.textContent + ' — 担当者 / ' + ts;
+              resolve({k:b.dataset.k, label:b.textContent});
             };
           });
           const iv = setInterval(()=>{ if(st.token!==token){ clearInterval(iv); reject(new Error('abort')); } }, 200);
-          setTimeout(()=>clearInterval(iv), 600000);
+          setTimeout(()=>clearInterval(iv), 900000);
         });
+        audit('gate', '<b>担当者が承認</b> — 「'+esc(chosen.label)+'」を選択（以降の処理はこの判断に従う）');
         $('liveDot').className = 'dot live';
         $('conTag').textContent = 'RUNNING';
-        if(g.then && g.then[key]){ queue.unshift(...g.then[key]); total = n + queue.length; }
+        if(g.then && g.then[chosen.k]){ queue.unshift(...g.then[chosen.k]); total = n + queue.length; }
         await wait(500);
       }
 
@@ -1433,13 +1872,14 @@ async function run(sc, v){
 }
 
 /* ============================================================ 結果 */
-function finish(sc, v){
+function finish(sc, v, isHalt){
   stopTimer();
   $('liveDot').className = 'dot';
-  $('conTag').textContent = 'COMPLETE';
+  $('conTag').textContent = isHalt ? 'HALTED — HANDED TO HUMAN' : 'COMPLETE';
   $('prog').style.width = '100%';
   $('pauseBtn').disabled = true;
-  const sp = $('stamp'); if(sp){ sp.textContent='確定'; sp.classList.add('ready'); }
+  const sp = $('stamp');
+  if(sp){ sp.textContent = sc.noRoi ? '保留' : '確定'; sp.classList.add(sc.noRoi ? 'halt' : 'ready'); }
 
   const secs = (st.elapsed/1000).toFixed(1);
   $('resGrid').innerHTML = sc.res(v).map(r=>
@@ -1447,19 +1887,76 @@ function finish(sc, v){
     '<b>'+esc(r.v)+(r.u?'<small>'+esc(r.u)+'</small>':'')+'</b>'+
     '<span>'+esc(r.s)+'</span></div>').join('');
 
-  $('barBaseTxt').textContent = fmtMin(sc.baseMin);
-  $('barAiTxt').textContent   = fmtMin(sc.aiMin);
-  $('nextTitle').textContent  = sc.next.t;
-  $('nextBody').innerHTML = esc(sc.next.b) +
-    '<br><br><span style="color:var(--text-3)">このデモでのエージェント処理は <b class="num">'+secs+'秒</b>。' +
-    '上の「' + fmtMin(sc.aiMin) + '」は、人が内容を確認して承認する時間を含めた現実的な想定値です。</span>';
+  $('nextTitle').textContent = sc.next.t;
 
+  const cg = $('ctaGhost');
+  if(cg){
+    if(sc.noRoi){ cg.textContent = '成功するシナリオも見る'; cg.dataset.cta = 'run-quote'; }
+    else { cg.textContent = 'AIが止まる場面も見る'; cg.dataset.cta = 'run-halt'; }
+  }
+
+  if(sc.noRoi){
+    $('bars').style.display = 'none';
+    $('roi').style.display = 'none';
+    $('nextBody').innerHTML = esc(sc.next.b) +
+      '<br><br><span style="color:var(--text-3)">このケースでは成果物を作りません。'+
+      '「作らなかった」ことが正しい結果です。監査証跡には、止めた理由と引き継ぎ先が残ります。</span>';
+  } else {
+    $('bars').style.display = '';
+    $('roi').style.display = '';
+    $('barBaseTxt').textContent = fmtMin(sc.baseMin);
+    $('barAiTxt').textContent   = fmtMin(sc.aiMin);
+    $('nextBody').innerHTML = esc(sc.next.b) +
+      '<br><br><span style="color:var(--text-3)">このデモでのエージェント処理は <b class="num">'+secs+'秒</b>。' +
+      '上の「' + fmtMin(sc.aiMin) + '」は、人が内容を確認して承認する時間を含めた現実的な想定値です。</span>';
+    setupRoi(sc, v);
+    requestAnimationFrame(()=>{
+      $('barBase').style.width = '100%';
+      $('barAi').style.width = Math.max(3, sc.aiMin / sc.baseMin * 100) + '%';
+    });
+  }
   $('results').classList.add('on');
-  requestAnimationFrame(()=>{
-    $('barBase').style.width = '100%';
-    $('barAi').style.width = Math.max(3, sc.aiMin / sc.baseMin * 100) + '%';
-  });
 }
+
+/* ============================================================ ROI 試算 */
+const ROI_LABEL = {quote:'月あたりの見積件数', shindan:'月あたりの診断件数', meet:'月あたりの商談件数', field:'月あたりの日報件数'};
+const ROI_UNIT  = {quote:'見積', shindan:'診断', meet:'商談', field:'日報'};
+
+function setupRoi(sc, v){
+  $('roiCntLab').textContent = ROI_LABEL[sc.id] || '月あたりの件数';
+  if($('roiCnt').dataset.sc !== sc.id){
+    $('roiCnt').value  = sc.monthly;
+    $('roiRate').value = 3500;
+    $('roiBase').value = sc.baseMin;
+    $('roiAi').value   = sc.aiMin;
+  }
+  ['roiCnt','roiRate','roiBase','roiAi'].forEach(id=>{ $(id).dataset.sc = sc.id; });
+  calcRoi(sc);
+}
+function calcRoi(sc){
+  const num = id => { const x = parseFloat($(id).value); return isFinite(x) && x >= 0 ? x : 0; };
+  const cnt = num('roiCnt'), rate = num('roiRate'), base = num('roiBase'), ai = num('roiAi');
+  const savedMin = Math.max(0, base - ai) * cnt;
+  const hrs = savedMin / 60;
+  const mon = hrs * rate;
+  $('roiHrs').textContent  = hrs ? hrs.toFixed(hrs < 10 ? 1 : 0) + ' 時間' : '—';
+  $('roiHrsSub').innerHTML = cnt ? '1件あたり ' + Math.max(0, base-ai) + '分 × ' + cnt + '件' : '&nbsp;';
+  $('roiMon').textContent  = mon ? fmtYenBig(mon) : '—';
+  $('roiYear').textContent = mon ? fmtYenBig(mon*12) : '—';
+  $('roiFte').textContent  = hrs ? (hrs/160).toFixed(2) + ' 人' : '—';
+  const unit = ROI_UNIT[sc.id] || '件';
+  $('roiNote').innerHTML = base <= ai
+    ? '※ AIの所要時間が従来を上回っています。数値を確認してください。'
+    : '※ '+unit+'1件あたり <b>'+Math.max(0,base-ai)+'分</b> の短縮を、月 '+cnt+'件・時給 '+fmtYen(rate)+
+      ' で換算した参考値です。ライセンス費・構築費・教育コストは含みません。'+
+      '既定値はデモ用の想定値なので、御社の実数に置き換えてください。';
+}
+['roiCnt','roiRate','roiBase','roiAi'].forEach(id=>{
+  $(id).addEventListener('input', ()=>{ if(st.sc && !st.sc.noRoi) calcRoi(st.sc); });
+});
+
+/* ============================================================ 起動 */
+if(location.hash) applyHash(false);
 </script>
 
 </body>

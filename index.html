@@ -619,6 +619,47 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
 .sbtn:hover{color:var(--text);border-color:var(--accent);background:var(--accent-soft)}
 .sbtn.done{color:var(--ok);border-color:var(--ok);background:var(--ok-soft)}
 
+
+/* ============ データ参照権限トグル ============ */
+.perm{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+.perm-hd{display:flex;align-items:baseline;gap:8px;margin-bottom:9px;flex-wrap:wrap}
+.perm-hd h4{white-space:nowrap}
+.perm-hd h4{font-size:11.5px;font-weight:600}
+.perm-hd span{font-size:10.5px;color:var(--text-3)}
+.perm-list{display:flex;flex-direction:column;gap:7px}
+.pm{
+  display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;
+  border:1px solid var(--line-soft);background:var(--ground);transition:.15s;
+}
+.pm.off{background:var(--gate-soft);border-color:color-mix(in srgb,var(--gate) 32%,transparent)}
+.pm.req{opacity:.72}
+.pm-txt{flex:1;min-width:0}
+.pm-txt b{display:block;font-size:12px;font-weight:500}
+.pm-txt small{display:block;font-size:10.5px;color:var(--text-3);margin-top:1px}
+.sw{
+  flex:none;width:34px;height:19px;border-radius:20px;background:var(--accent);
+  position:relative;transition:.18s;border:none;padding:0;
+}
+.sw::after{
+  content:"";position:absolute;top:2px;left:17px;width:15px;height:15px;border-radius:50%;
+  background:#fff;transition:.18s;box-shadow:0 1px 2px rgba(0,0,0,.3);
+}
+.sw[aria-pressed="false"]{background:var(--text-3)}
+.sw[aria-pressed="false"]::after{left:2px}
+.pm.req .sw{background:var(--text-3);cursor:default}
+.perm-note{margin-top:9px;font-size:10.5px;color:var(--text-3);line-height:1.7}
+
+.stepwrap.skip .stepdot{border-color:var(--con-text-3);background:var(--con-2)}
+.stepwrap.skip .step-t{color:var(--con-text-3)}
+.find.skip{border-left-color:var(--con-text-3);color:var(--con-text-3)}
+
+.limitbanner{
+  margin-bottom:14px;padding:11px 14px;border-radius:8px;
+  background:var(--gate-soft);border:1px solid color-mix(in srgb,var(--gate) 32%,transparent);
+  font-size:12px;line-height:1.75;color:var(--text-2);
+}
+.limitbanner b{color:var(--gate)}
+
 /* ============ print — 成果物だけを出す ============ */
 @media print{
   @page{margin:14mm}
@@ -697,7 +738,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
         <div class="gov-item"><h4>監査証跡</h4><p>各実行で「いつ・どのデータを参照し・誰が何を承認したか」を記録します。実行画面の「監査証跡」を開くと、その回の記録が見られます。</p></div>
         <div class="gov-item"><h4>止まる条件</h4><p>確信度が基準を下回る／補完データがない／社内基準を外れる場合は自動処理を中止します。しきい値は業務ごとに御社が設定します。</p></div>
         <div class="gov-item"><h4>データの置き場所</h4><p>実装時は、参照データの保存先・保持期間・アクセス権限を業務ごとに定義します。学習への二次利用の可否も契約で明示します。</p></div>
-        <div class="gov-item"><h4>権限管理</h4><p>エージェントに渡す権限は業務単位で最小化します（読み取りのみ／下書き作成のみ、など）。送信権限は原則として渡しません。</p></div>
+        <div class="gov-item"><h4>権限管理（画面で試せます）</h4><p>エージェントに渡す権限は業務単位で最小化します。実行画面の左側「参照を許可するデータ」でOFFにすると、その工程を飛ばし、何ができなくなるかがその場で分かります。送信権限は原則として渡しません。</p></div>
         <div class="gov-item"><h4>このデモの構成</h4><p>単一HTMLファイル。外部通信・外部送信は一切ありません。閉域網のPCでもそのまま動きます。入力した数値もブラウザ内に留まります。</p></div>
       </div>
     </div>
@@ -798,6 +839,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
         </div>
 
         <div class="results" id="results">
+          <div class="limitbanner" id="limitBanner" style="display:none"></div>
           <div class="res-grid" id="resGrid"></div>
 
           <div class="bars" id="bars">
@@ -1508,6 +1550,46 @@ const TABLES = {
   field:{cols:['翌日以降の作業','期限'], cls:['','r']}
 };
 
+
+/* ============================ 参照データ権限（人が渡す範囲を決める） */
+const SOURCES = {
+  quote:[
+    {id:'mail', label:'受信メール・添付図面', req:true, sub:'この業務の起点。OFFにできません'},
+    {id:'erp',  label:'品目マスタ・過去見積', tool:'erp.quotes.search', sub:'得意先ごとの前回条件',
+      off:'前回単価と受注実績を参照できません。原価だけから単価を組むことになり、得意先ごとの条件が反映されません。'},
+    {id:'wms',  label:'在庫・仕入先データ', tool:'wms.stock.check', sub:'在庫数と仕入納期',
+      off:'在庫数と仕入先の納期回答が分かりません。全量を新規手配する前提でしか積算できず、納期の回答ができません。'}
+  ],
+  shindan:[
+    {id:'docs', label:'面談メモ・決算概要', req:true, sub:'この業務の起点。OFFにできません'},
+    {id:'bench',label:'業界ベンチマーク', tool:'benchmark.lookup', sub:'同業・同規模の統計',
+      off:'同業比較ができません。「業界水準からどれだけ遅れているか」を示せず、経営者を動かす材料が弱くなります。'},
+    {id:'hist', label:'過去PoCの実績・テンプレート', tool:'poc.design', sub:'期間・費用の相場',
+      off:'過去実績を参照できないため、期間と概算費用を提示できません。カルテは課題整理までで止まります。'}
+  ],
+  meet:[
+    {id:'rec',  label:'商談録音・カレンダー', req:true, sub:'この業務の起点。OFFにできません'},
+    {id:'crm',  label:'CRM の既存商談データ', tool:'crm.opportunity.update', sub:'フェーズ・確度・履歴',
+      off:'CRMに書き込めません。議事録は作れますが、フェーズ・確度の更新とタスク起票は担当者の手作業になります。'}
+  ],
+  field:[
+    {id:'photo',label:'現場写真・音声メモ', req:true, sub:'この業務の起点。OFFにできません'},
+    {id:'sched',label:'工程表・実行予算', tool:'schedule.check', sub:'計画との差異',
+      off:'工程表と突き合わせられません。「何%進んだか」は分かっても「遅れているか」は判定できません。'}
+  ],
+  halt:[
+    {id:'doc',  label:'依頼メール・添付ファイル', req:true, sub:'この業務の起点。OFFにできません'},
+    {id:'hist', label:'過去案件データ', tool:'history.search', sub:'類似案件からの推定',
+      off:'過去案件で補完する選択肢すら持てません。エージェントはより早い段階で人に引き継ぎます。'}
+  ]
+};
+function srcOf(scId, step){
+  if(!step.tools || !step.tools.length) return null;
+  const list = SOURCES[scId] || [];
+  const hit = list.find(x => x.tool && x.tool === step.tools[0].n);
+  return hit || null;
+}
+
 /* ================================================================== HUB */
 const cardsEl = document.getElementById('cards');
 SCENARIOS.forEach(sc=>{
@@ -1530,7 +1612,7 @@ SCENARIOS.forEach(sc=>{
 
 /* ================================================================ 状態 */
 const $ = id => document.getElementById(id);
-let st = { token:0, paused:false, speed:1, sc:null, v:null, t0:0, timer:null, elapsed:0, audit:[], nav:false };
+let st = { token:0, paused:false, speed:1, sc:null, v:null, t0:0, timer:null, elapsed:0, audit:[], nav:false, src:{} };
 
 /* rAF ベースの待機 — 速度倍率と一時停止が実際に効く */
 function wait(ms){
@@ -1577,6 +1659,7 @@ function openRun(scId, vId, push){
   if(!sc) return;
   const v = sc.variants.find(x=>x.id===vId) || sc.variants[0];
   st.token++; st.sc=sc; st.v=v; st.paused=false; st.elapsed=0; st.audit=[];
+  st.src={}; (SOURCES[sc.id]||[]).forEach(x=>{ st.src[x.id] = true; });
   $('hub').classList.add('off'); $('run').classList.add('on');
   window.scrollTo(0,0);
   $('runTitle').textContent = sc.title;
@@ -1594,6 +1677,7 @@ function openRun(scId, vId, push){
   renderInput(sc, v); renderOutput(sc, v);
   $('feed').innerHTML = '';
   audit('run', '実行を開始 — <b>'+esc(sc.title)+'</b>／'+esc(v.label)+'（実行ID '+runId()+'）');
+  audit('ref', '参照権限 — ' + (SOURCES[sc.id]||[]).map(x=>esc(x.label)+'：ON').join(' ／ '));
   if(push !== false){
     const h = '#'+sc.id+'/'+v.id;
     if(location.hash !== h){ st.nav=true; history.pushState({sc:sc.id,v:v.id}, '', h); st.nav=false; }
@@ -1679,7 +1763,34 @@ function renderInput(sc, v){
       '<div class="co-row"><dt>プロフィール</dt><dd>'+esc(v.coSub)+'</dd></div>'+
       (sc.noRoi ? '' :
       '<div class="co-row"><dt>従来工数</dt><dd>'+esc(v.baseName)+'<br>'+fmtMin(sc.baseMin)+'</dd></div>')+
-    '</dl>';
+    '</dl>'+
+    renderPerms(sc);
+  bindPerms();
+}
+
+function renderPerms(sc){
+  const list = SOURCES[sc.id] || [];
+  if(!list.length) return '';
+  return '<div class="perm"><div class="perm-hd"><h4>参照を許可するデータ</h4>'+
+    '<span>実行中でも切り替えられます</span></div><div class="perm-list">'+
+    list.map(x=>'<div class="pm'+(x.req?' req':'')+'" data-src="'+x.id+'">'+
+      '<div class="pm-txt"><b>'+esc(x.label)+'</b><small>'+esc(x.sub)+'</small></div>'+
+      '<button class="sw" type="button" aria-pressed="true" aria-label="'+esc(x.label)+'の参照を許可"'+
+      (x.req?' disabled':'')+' data-toggle="'+x.id+'"></button></div>').join('')+
+    '</div><p class="perm-note">エージェントに渡す権限は業務単位で決めます。OFFにすると、その工程を飛ばして何ができなくなるかがログに出ます。</p></div>';
+}
+function bindPerms(){
+  document.querySelectorAll('#inPane .sw[data-toggle]').forEach(b=>{
+    b.onclick = () => {
+      const id = b.dataset.toggle;
+      if(b.disabled) return;
+      st.src[id] = !st.src[id];
+      b.setAttribute('aria-pressed', String(st.src[id]));
+      b.closest('.pm').classList.toggle('off', !st.src[id]);
+      const meta = (SOURCES[st.sc.id]||[]).find(x=>x.id===id);
+      audit('gate', '<b>参照権限を変更</b> — '+esc(meta.label)+' を '+(st.src[id]?'ON':'OFF')+' に設定');
+    };
+  });
 }
 
 /* ============================================================ 成果物 */
@@ -1780,6 +1891,19 @@ async function run(sc, v){
           : '<b>成果物を生成</b>し、実行を完了');
         finish(sc, v, isHalt);
         return;
+      }
+
+      /* 参照権限が OFF の工程は飛ばす */
+      const srcMeta = srcOf(sc.id, s);
+      if(srcMeta && st.src[srcMeta.id] === false){
+        const sk = el('<div class="stepwrap skip done"><div class="stepdot"></div>'+
+          '<div class="step-t"><span class="step-n">'+String(n).padStart(2,'0')+'</span>'+
+          '<span>「'+esc(srcMeta.label)+'」は参照が許可されていないため、この工程を飛ばします。</span></div>'+
+          '<div class="find skip"><span>'+esc(srcMeta.off)+'</span></div></div>');
+        feed.appendChild(sk); scrollFeed();
+        audit('gate', '<b>工程をスキップ</b> — '+esc(srcMeta.label)+' の参照権限が OFF（'+esc(srcMeta.tool)+' を実行せず）');
+        await wait(1600);
+        continue;
       }
 
       const wrap = el('<div class="stepwrap run"><div class="stepdot">'+ico('check',3.4)+'</div>'+
@@ -1886,6 +2010,15 @@ function finish(sc, v, isHalt){
     '<div class="res'+(r.hl?' hl':'')+'"><em>'+esc(r.t)+'</em>'+
     '<b>'+esc(r.v)+(r.u?'<small>'+esc(r.u)+'</small>':'')+'</b>'+
     '<span>'+esc(r.s)+'</span></div>').join('');
+
+  const offList = (SOURCES[sc.id]||[]).filter(x=>st.src[x.id]===false);
+  const bn = $('limitBanner');
+  if(offList.length){
+    bn.innerHTML = '<b>参照データを制限した状態での実行です。</b>' +
+      offList.map(x=>esc(x.label)).join('・') + ' を OFF にしたため、上の数値はその分の工程を飛ばした結果です。' +
+      '実装でも、権限の範囲がそのままエージェントにできることの範囲になります。';
+    bn.style.display = '';
+  } else bn.style.display = 'none';
 
   $('nextTitle').textContent = sc.next.t;
 

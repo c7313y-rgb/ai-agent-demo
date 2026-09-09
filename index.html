@@ -679,6 +679,10 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
 }
 .vsel:hover{border-color:var(--accent)}
 .vnote{font-size:10px;color:var(--text-3);line-height:1.5}
+.vtest{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:8px}
+.vtest-out{font-size:11px;color:var(--text-3);line-height:1.6;flex:1;min-width:150px}
+.vtest-out.ok{color:var(--ok)}
+.vtest-out.ng{color:var(--gate)}
 
 /* ============ print — 成果物だけを出す ============ */
 @media print{
@@ -759,7 +763,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
         <div class="gov-item"><h4>止まる条件</h4><p>確信度が基準を下回る／補完データがない／社内基準を外れる場合は自動処理を中止します。しきい値は業務ごとに御社が設定します。</p></div>
         <div class="gov-item"><h4>データの置き場所</h4><p>実装時は、参照データの保存先・保持期間・アクセス権限を業務ごとに定義します。学習への二次利用の可否も契約で明示します。</p></div>
         <div class="gov-item"><h4>権限管理（画面で試せます）</h4><p>エージェントに渡す権限は業務単位で最小化します。実行画面の左側「参照を許可するデータ」でOFFにすると、その工程を飛ばし、何ができなくなるかがその場で分かります。送信権限は原則として渡しません。</p></div>
-        <div class="gov-item"><h4>このデモの構成</h4><p>単一HTMLファイル。外部通信・外部送信は一切ありません。閉域網のPCでもそのまま動きます。入力した数値もブラウザ内に留まります。</p></div><div class="gov-item"><h4>音声読み上げ</h4><p>エージェントの発話はOS内蔵の読み上げ機能（端末内で処理）を使います。端末内蔵の音声を優先して選びますが、環境によってはネットワーク経由の音声しかない場合があります。実行画面の「音声」ボタンでいつでも切れます。</p></div><div class="gov-item"><h4>音声が鳴らないとき</h4><p>ブラウザは、利用者が一度も操作していないページの自動再生を止めます。<b>実行画面の「音声」ボタンを一度押す</b>と有効になります。止められている間はボタンが赤くなり「音声を有効化」と表示されます。それでも鳴らない場合は端末の音量・出力先と、日本語音声の有無をご確認ください。</p></div>
+        <div class="gov-item"><h4>このデモの構成</h4><p>単一HTMLファイル。外部通信・外部送信は一切ありません。閉域網のPCでもそのまま動きます。入力した数値もブラウザ内に留まります。</p></div><div class="gov-item"><h4>音声読み上げ</h4><p>エージェントの発話はOS内蔵の読み上げ機能（端末内で処理）を使います。端末内蔵の音声を優先して選びますが、環境によってはネットワーク経由の音声しかない場合があります。実行画面の「音声」ボタンでいつでも切れます。</p></div><div class="gov-item"><h4>音声が鳴らないとき</h4><p>ブラウザは、利用者が一度も操作していないページの自動再生を止めます。<b>実行画面の「音声」ボタンを一度押す</b>と有効になります。また、デモの画面が裏に回っていると再生されません。下のボタンで、この端末で鳴るかどうかをその場で確認できます。</p><div class="vtest"><button class="sbtn" id="vtestBtn" type="button">音声テストを再生</button><span class="vtest-out" id="vtestOut">未実施</span></div></div>
       </div>
     </div>
   </div>
@@ -777,7 +781,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
     <b>本デモの位置づけ</b> — 登場する企業名・数値・帳票はすべて架空のサンプルです。実在の企業・取引とは関係ありません。
     エージェントの処理は事前設計したシナリオを再生しています（<b>外部通信なし・オフライン動作</b>／音声はOS内蔵の読み上げ機能を使用）。
     実際の削減効果は業務内容・データ整備状況により異なります。
-    <span style="display:block;margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--text-3)">build 2026-09-09b</span>
+    <span style="display:block;margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--text-3)">build 2026-09-09c</span>
   </div>
 </main>
 
@@ -1645,7 +1649,7 @@ function forSpeech(x){
 
 /* 発話は「積む」。切るのは要所だけ。
    毎回 cancel すると次の行が前の行を途中で切ってしまい、結果的に何も聞こえなくなる。 */
-function enqueue(t){
+function enqueue(t, retry){
   try{
     try{ speechSynthesis.resume(); }catch(e){}   /* 停止状態のまま固まっている端末への保険 */
     const u = new SpeechSynthesisUtterance(t);
@@ -1665,6 +1669,19 @@ function enqueue(t){
       }
     };
     speechSynthesis.speak(u);
+
+    /* 見張り：speaking のまま start が来ない「キューの固まり」を検知して復帰させる。
+       ページが裏に回ると再生が始まらない環境があり、そのまま溜まると以降ずっと無音になる。 */
+    let started = false;
+    u.addEventListener('start', () => { started = true; });
+    setTimeout(() => {
+      if(started || !VOICE.on) return;
+      VOICE.q = Math.max(0, VOICE.q - 1); paintSpeaking();
+      try{ speechSynthesis.cancel(); }catch(e){}
+      if(document.hidden) return;                 /* 裏にいる間は諦める。表に戻れば次の行から鳴る */
+      if((retry || 0) < 1){ setTimeout(() => { if(VOICE.on) enqueue(t, 1); }, 300); }
+      else { VOICE.blocked = true; paintVoiceBtn(); }
+    }, 1200);
   }catch(e){ VOICE.q = 0; }
 }
 function paintSpeaking(){
@@ -1727,6 +1744,43 @@ function paintVoiceSel(){
     '<option value="'+esc(v.name)+'"'+(VOICE.v && v.name===VOICE.v.name ? ' selected':'')+'>'+
     esc(v.name) + (v.localService ? '' : '（ネット経由）') + '</option>').join('');
 }
+function voiceTest(){
+  const out = $('vtestOut'); if(!out) return;
+  const note = (msg, kind) => {
+    out.textContent = msg;
+    out.className = 'vtest-out' + (kind ? ' ' + kind : '');
+  };
+  if(!VOICE.ok){ note('この端末のブラウザは音声読み上げに対応していません。', 'ng'); return; }
+  if(!VOICE.list.length){ note('この端末に日本語の読み上げ音声が入っていません。OSの音声設定をご確認ください。', 'ng'); return; }
+  try{ speechSynthesis.cancel(); }catch(e){}
+  VOICE.q = 0;
+  note('再生中…', '');
+  const u = new SpeechSynthesisUtterance('音声テストです。これが聞こえていれば設定は正常です。');
+  u.lang = 'ja-JP'; if(VOICE.v){ try{ u.voice = VOICE.v; }catch(e){} }
+  const t0 = Date.now();
+  let started = false;
+  u.onstart = () => { started = true; VOICE.blocked = false; paintVoiceBtn(); };
+  u.onend = () => note('再生できました（' + (VOICE.v ? VOICE.v.name : '既定の音声') + '／' +
+      ((Date.now()-t0)/1000).toFixed(1) + '秒）。聞こえない場合は端末の音量と出力先をご確認ください。', 'ok');
+  u.onerror = e => {
+    const err = e && e.error;
+    if(err === 'not-allowed' || err === 'blocked'){
+      VOICE.blocked = true; paintVoiceBtn();
+      note('ブラウザが再生を止めました。実行画面の「音声」ボタンを一度押すと有効になります。', 'ng');
+    } else if(err !== 'canceled' && err !== 'interrupted'){
+      note('再生に失敗しました（' + err + '）。', 'ng');
+    }
+  };
+  try{ speechSynthesis.speak(u); }catch(e){ note('再生を開始できませんでした。', 'ng'); return; }
+  setTimeout(() => {
+    if(started) return;
+    try{ speechSynthesis.cancel(); }catch(e){}
+    note(document.hidden
+      ? 'このページが裏に回っているため再生されませんでした。デモの画面を前面にしてもう一度お試しください。'
+      : '再生が始まりませんでした。ほかのタブやアプリが音声を使っていないか、端末の音量と出力先をご確認ください。', 'ng');
+  }, 2500);
+}
+
 function initVoice(){
   const b = $('voiceBtn');
   if(!VOICE.ok){
@@ -1735,6 +1789,10 @@ function initVoice(){
   }
   VOICE.on = LS.get('agentdemo.voice') !== 'off';
   paintVoiceBtn();
+  try{ speechSynthesis.cancel(); }catch(e){}    /* 前のページから残ったキューを掃除 */
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden){ try{ speechSynthesis.cancel(); }catch(e){} VOICE.q = 0; paintSpeaking(); }
+  });
 
   const load = () => {
     const all = speechSynthesis.getVoices() || [];
@@ -1772,6 +1830,7 @@ function initVoice(){
     if(!VOICE.on) voiceStop();
     else say('音声をオンにしました。', {priority:true});
   };
+  const tb = $('vtestBtn'); if(tb) tb.onclick = voiceTest;
   $('voiceSel').onchange = e => {
     VOICE.v = VOICE.list.find(v => v.name === e.target.value) || VOICE.v;
     if(VOICE.v) LS.set('agentdemo.voiceName', VOICE.v.name);

@@ -704,6 +704,58 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
 }
+/* ============ 読み上げ音声ナビ（字幕） ============ */
+.navb{
+  position:fixed; left:50%; transform:translateX(-50%); bottom:16px; z-index:60;
+  width:min(1120px, calc(100% - 32px));
+  display:flex; align-items:flex-start; gap:12px;
+  padding:12px 15px; border-radius:14px;
+  background:var(--panel); border:1px solid var(--line);
+  box-shadow:var(--shadow-lift);
+  animation:navIn .22s ease-out;
+}
+@keyframes navIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.navb.k-gate{border-color:var(--gate); background:var(--gate-soft)}
+.navb.k-done{border-color:var(--ok); background:var(--ok-soft)}
+.navb.k-start{border-color:var(--accent)}
+.navb-ic{
+  flex:none; width:30px; height:30px; border-radius:9px; margin-top:1px;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--accent-soft); color:var(--accent);
+}
+.navb.k-gate .navb-ic{background:#fff; color:var(--gate)}
+.navb.k-done .navb-ic{background:#fff; color:var(--ok)}
+.navb-ic svg{width:17px; height:17px}
+.navb-body{flex:1; min-width:0}
+.navb-cap{
+  font-size:10px; letter-spacing:.09em; font-family:var(--mono);
+  color:var(--text-3); display:flex; align-items:center; gap:7px; flex-wrap:wrap;
+}
+.navb-cap b{font-weight:700; color:var(--text-2); letter-spacing:.04em}
+.navb-txt{
+  font-size:15px; line-height:1.55; color:var(--text); margin-top:3px;
+  font-feature-settings:"palt"; word-break:break-word;
+}
+.navb.k-gate .navb-txt, .navb.k-done .navb-txt{font-weight:600}
+.navb-do{
+  margin-top:5px; font-size:12.5px; line-height:1.5; color:var(--gate); font-weight:700;
+  display:flex; align-items:center; gap:6px;
+}
+.navb.k-done .navb-do{color:var(--ok)}
+.navb-x{
+  flex:none; align-self:center; width:26px; height:26px; border-radius:7px;
+  border:1px solid var(--line); background:var(--panel-2); color:var(--text-3);
+  font-size:14px; line-height:1; cursor:pointer;
+}
+.navb-x:hover{color:var(--text); border-color:var(--text-3)}
+@media (max-width:720px){
+  .navb{bottom:10px; padding:10px 12px; gap:9px}
+  .navb-txt{font-size:13.5px}
+}
+body.has-nav{padding-bottom:108px}
+@media (max-width:720px){ body.has-nav{padding-bottom:132px} }
+@media print{ .navb{display:none!important} body.has-nav{padding-bottom:0} }
+
 </style>
 
 <header class="topbar">
@@ -763,7 +815,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
         <div class="gov-item"><h4>止まる条件</h4><p>確信度が基準を下回る／補完データがない／社内基準を外れる場合は自動処理を中止します。しきい値は業務ごとに御社が設定します。</p></div>
         <div class="gov-item"><h4>データの置き場所</h4><p>実装時は、参照データの保存先・保持期間・アクセス権限を業務ごとに定義します。学習への二次利用の可否も契約で明示します。</p></div>
         <div class="gov-item"><h4>権限管理（画面で試せます）</h4><p>エージェントに渡す権限は業務単位で最小化します。実行画面の左側「参照を許可するデータ」でOFFにすると、その工程を飛ばし、何ができなくなるかがその場で分かります。送信権限は原則として渡しません。</p></div>
-        <div class="gov-item"><h4>このデモの構成</h4><p>単一HTMLファイル。外部通信・外部送信は一切ありません。閉域網のPCでもそのまま動きます。入力した数値もブラウザ内に留まります。</p></div><div class="gov-item"><h4>音声読み上げ</h4><p>エージェントの発話はOS内蔵の読み上げ機能（端末内で処理）を使います。端末内蔵の音声を優先して選びますが、環境によってはネットワーク経由の音声しかない場合があります。実行画面の「音声」ボタンでいつでも切れます。読み上げが使えない端末では、音の合図（チャイム）に自動で切り替わります。</p></div><div class="gov-item"><h4>音声が鳴らないとき</h4><p>ブラウザは、利用者が一度も操作していないページの自動再生を止めます。<b>実行画面の「音声」ボタンを一度押す</b>と有効になります。また、デモの画面が裏に回っていると再生されません。下のボタンで<b>チャイム→読み上げの順に試し</b>、この端末で何が鳴るかをその場で切り分けます。読み上げが動かない端末（ブラウザ側の不具合で無反応になることがあります）では、<b>開始・要所・完了をチャイムでお知らせする方式に自動で切り替わります</b>。デモの内容は変わりません。</p><div class="vtest"><button class="sbtn" id="vtestBtn" type="button">音声テストを再生</button><span class="vtest-out" id="vtestOut">未実施</span></div></div>
+        <div class="gov-item"><h4>このデモの構成</h4><p>単一HTMLファイル。外部通信・外部送信は一切ありません。閉域網のPCでもそのまま動きます。入力した数値もブラウザ内に留まります。</p></div><div class="gov-item"><h4>音声読み上げ</h4><p>エージェントの発話はOS内蔵の読み上げ機能（端末内で処理）を使います。端末内蔵の音声を優先して選びますが、環境によってはネットワーク経由の音声しかない場合があります。実行画面の「音声」ボタンでいつでも切れます。読み上げが使えない端末では、音の合図（チャイム）に自動で切り替わります。あわせて画面下に<b>字幕ナビ</b>を出し、いまエージェントが何をしているか・次にご担当者が何をするかを文字でも示します（実行画面の「ナビ」ボタンで切替）。<b>音が出ない会場でも、伝わる情報は同じです。</b></p></div><div class="gov-item"><h4>音声が鳴らないとき</h4><p>ブラウザは、利用者が一度も操作していないページの自動再生を止めます。<b>実行画面の「音声」ボタンを一度押す</b>と有効になります。また、デモの画面が裏に回っていると再生されません。下のボタンで<b>チャイム→読み上げの順に試し</b>、この端末で何が鳴るかをその場で切り分けます。読み上げが動かない端末（ブラウザ側の不具合で無反応になることがあります）では、<b>開始・要所・完了をチャイムでお知らせする方式に自動で切り替わります</b>。デモの内容は変わりません。</p><div class="vtest"><button class="sbtn" id="vtestBtn" type="button">音声テストを再生</button><span class="vtest-out" id="vtestOut">未実施</span></div></div>
       </div>
     </div>
   </div>
@@ -781,7 +833,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
     <b>本デモの位置づけ</b> — 登場する企業名・数値・帳票はすべて架空のサンプルです。実在の企業・取引とは関係ありません。
     エージェントの処理は事前設計したシナリオを再生しています（<b>外部通信なし・オフライン動作</b>／音声はOS内蔵の読み上げ機能を使用）。
     実際の削減効果は業務内容・データ整備状況により異なります。
-    <span style="display:block;margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--text-3)">build 2026-09-09f</span>
+    <span style="display:block;margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--text-3)">build 2026-09-09g</span>
   </div>
 </main>
 
@@ -810,6 +862,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
           </button>
           <select class="vsel" id="voiceSel" hidden aria-label="読み上げ音声の選択"></select>
         </div>
+        <button class="cbtn" id="navBtn" type="button" aria-pressed="true" title="画面下に「いま何をしているか」を字幕で出します">ナビ ON</button>
         <div class="speed" id="speed">
           <button type="button" data-s="0.5">0.5x</button>
           <button type="button" data-s="1" class="on">1x</button>
@@ -820,6 +873,16 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
       </div>
     </div>
     <div class="progress"><i id="prog"></i></div>
+  </div>
+
+  <div class="navb" id="navBar" hidden role="status" aria-live="polite">
+    <div class="navb-ic" id="navIco"></div>
+    <div class="navb-body">
+      <div class="navb-cap"><b>エージェントナビ</b><span id="navMode">読み上げ</span></div>
+      <div class="navb-txt" id="navTxt">—</div>
+      <div class="navb-do" id="navDo" hidden></div>
+    </div>
+    <button class="navb-x" id="navX" type="button" aria-label="ナビを閉じる">×</button>
   </div>
 
   <div class="wrap">
@@ -1571,7 +1634,8 @@ const SVG = {
   alert:'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/>',
   stop:'<circle cx="12" cy="12" r="9"/><path d="M9 9h6v6H9z"/>',
   spkOn:'<path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>',
-  spkOff:'<path d="M11 5L6 9H2v6h4l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/>'
+  spkOff:'<path d="M11 5L6 9H2v6h4l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/>',
+  wave:'<path d="M2 12h2M7 6v12M12 3v18M17 7v10M22 12h-2"/>'
 };
 const ico = (k, w) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||1.8)+'" stroke-linecap="round" stroke-linejoin="round">'+SVG[k]+'</svg>';
 const el = (h) => { const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.firstElementChild; };
@@ -1683,6 +1747,59 @@ function chime(kind){
   return true;
 }
 
+/* ---- 読み上げ音声ナビ（字幕）。音が出ない端末でも同じ情報が伝わるようにする ---- */
+const NAV = { on:true, kind:'' };
+const NAV_DO = {
+  gate: 'この先はご担当者の判断です。下の選択肢から選んでください。',
+  done: '完了しました。右側の成果物と、下のROI試算をご確認ください。'
+};
+function navMode(){
+  if(!NAV.on) return '';
+  if(!VOICE.on) return '音声OFF・字幕のみ';
+  if(VOICE.mode === 'chime') return 'チャイム＋字幕';
+  return '読み上げ＋字幕';
+}
+function navPaint(){
+  const b = $('navBtn'); if(!b) return;
+  b.textContent = NAV.on ? 'ナビ ON' : 'ナビ OFF';
+  b.setAttribute('aria-pressed', String(NAV.on));
+  b.classList.toggle('primary', false);
+  const m = $('navMode'); if(m) m.textContent = navMode();
+}
+function navShow(text, kind){
+  const bar = $('navBar'); if(!bar) return;
+  if(!NAV.on){ bar.hidden = true; document.body.classList.remove('has-nav'); return; }
+  const t = stripTags(String(text || ''))
+    .replace(/パーセント/g, '%')      /* 読み上げ用の言い回しを字幕向けに戻す */
+    .replace(/\s+/g, ' ').trim();
+  if(!t) return;
+  NAV.kind = kind || '';
+  bar.hidden = false;
+  document.body.classList.add('has-nav');
+  bar.className = 'navb' + (kind ? ' k-' + kind : '');
+  $('navIco').innerHTML = ico(kind === 'gate' ? 'alert' : kind === 'done' ? 'check' : 'wave', 2);
+  $('navTxt').textContent = t;
+  const doTxt = NAV_DO[kind] || '';
+  const d = $('navDo');
+  d.hidden = !doTxt;
+  d.textContent = doTxt;
+  $('navMode').textContent = navMode();
+}
+function navHide(){ const b = $('navBar'); if(b){ b.hidden = true; } document.body.classList.remove('has-nav'); NAV.kind = ''; }
+function initNav(){
+  NAV.on = LS.get('agentdemo.nav') !== 'off';
+  navPaint();
+  const b = $('navBtn');
+  if(b) b.onclick = () => {
+    NAV.on = !NAV.on; LS.set('agentdemo.nav', NAV.on ? 'on' : 'off');
+    navPaint(); if(!NAV.on) navHide();
+  };
+  const x = $('navX');
+  if(x) x.onclick = () => {
+    NAV.on = false; LS.set('agentdemo.nav', 'off'); navPaint(); navHide();
+  };
+}
+
 /* 音声の一覧は毎回取り直す。古い参照を渡すと Chrome はエラーも出さずに黙る。 */
 function pickVoice(){
   if(!VOICE.ok) return null;
@@ -1779,10 +1896,11 @@ function enqueue(t, modeIdx){
 }
 
 function say(text, opt){
+  const kind = opt && opt.kind;
+  navShow(text, kind);                        /* 字幕は音声のON/OFFに関係なく出す */
   if(!VOICE.on) return;
   if(VOICE.mode === 'chime'){                 /* 読み上げが動かない端末：要所だけ音で知らせる */
-    const k = opt && opt.kind;
-    if(k) chime(k);
+    if(kind) chime(kind);
     return;
   }
   if(!VOICE.ok) return;
@@ -1830,6 +1948,7 @@ function paintVoiceBtn(){
   b.classList.toggle('on', VOICE.on && !VOICE.blocked);
   b.classList.toggle('blocked', !!VOICE.blocked);
   b.setAttribute('aria-pressed', String(VOICE.on));
+  const nm = $('navMode'); if(nm) nm.textContent = navMode();
   $('voiceIco').innerHTML = ico(VOICE.on ? 'spkOn' : 'spkOff', 2);
   $('voiceLbl').textContent = VOICE.blocked ? '音声を有効化'
     : (VOICE.on ? (VOICE.mode === 'chime' ? '音声（チャイム）' : '音声 ON') : '音声 OFF');
@@ -2107,7 +2226,7 @@ function runId(){
     Math.random().toString(36).slice(2,6).toUpperCase();
 }
 function backToHub(push){
-  st.token++; stopTimer(); voiceStop();
+  st.token++; stopTimer(); voiceStop(); navHide();
   $('run').classList.remove('on'); $('hub').classList.remove('off');
   window.scrollTo(0,0);
   if(push !== false && location.hash){ st.nav=true; history.pushState({}, '', location.pathname); st.nav=false; }
@@ -2260,6 +2379,7 @@ function addBullets(items){
 }
 
 initVoice();
+initNav();
 
 /* ============================================================ タイマー */
 function startTimer(){

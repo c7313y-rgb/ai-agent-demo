@@ -763,7 +763,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
         <div class="gov-item"><h4>止まる条件</h4><p>確信度が基準を下回る／補完データがない／社内基準を外れる場合は自動処理を中止します。しきい値は業務ごとに御社が設定します。</p></div>
         <div class="gov-item"><h4>データの置き場所</h4><p>実装時は、参照データの保存先・保持期間・アクセス権限を業務ごとに定義します。学習への二次利用の可否も契約で明示します。</p></div>
         <div class="gov-item"><h4>権限管理（画面で試せます）</h4><p>エージェントに渡す権限は業務単位で最小化します。実行画面の左側「参照を許可するデータ」でOFFにすると、その工程を飛ばし、何ができなくなるかがその場で分かります。送信権限は原則として渡しません。</p></div>
-        <div class="gov-item"><h4>このデモの構成</h4><p>単一HTMLファイル。外部通信・外部送信は一切ありません。閉域網のPCでもそのまま動きます。入力した数値もブラウザ内に留まります。</p></div><div class="gov-item"><h4>音声読み上げ</h4><p>エージェントの発話はOS内蔵の読み上げ機能（端末内で処理）を使います。端末内蔵の音声を優先して選びますが、環境によってはネットワーク経由の音声しかない場合があります。実行画面の「音声」ボタンでいつでも切れます。</p></div><div class="gov-item"><h4>音声が鳴らないとき</h4><p>ブラウザは、利用者が一度も操作していないページの自動再生を止めます。<b>実行画面の「音声」ボタンを一度押す</b>と有効になります。また、デモの画面が裏に回っていると再生されません。下のボタンで、この端末で鳴るかどうかをその場で確認できます。</p><div class="vtest"><button class="sbtn" id="vtestBtn" type="button">音声テストを再生</button><span class="vtest-out" id="vtestOut">未実施</span></div></div>
+        <div class="gov-item"><h4>このデモの構成</h4><p>単一HTMLファイル。外部通信・外部送信は一切ありません。閉域網のPCでもそのまま動きます。入力した数値もブラウザ内に留まります。</p></div><div class="gov-item"><h4>音声読み上げ</h4><p>エージェントの発話はOS内蔵の読み上げ機能（端末内で処理）を使います。端末内蔵の音声を優先して選びますが、環境によってはネットワーク経由の音声しかない場合があります。実行画面の「音声」ボタンでいつでも切れます。</p></div><div class="gov-item"><h4>音声が鳴らないとき</h4><p>ブラウザは、利用者が一度も操作していないページの自動再生を止めます。<b>実行画面の「音声」ボタンを一度押す</b>と有効になります。また、デモの画面が裏に回っていると再生されません。下のボタンで、この端末で鳴るかどうかをその場で確認できます（3つの再生方式を順に試し、鳴った方式を記憶します）。</p><div class="vtest"><button class="sbtn" id="vtestBtn" type="button">音声テストを再生</button><span class="vtest-out" id="vtestOut">未実施</span></div></div>
       </div>
     </div>
   </div>
@@ -781,7 +781,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
     <b>本デモの位置づけ</b> — 登場する企業名・数値・帳票はすべて架空のサンプルです。実在の企業・取引とは関係ありません。
     エージェントの処理は事前設計したシナリオを再生しています（<b>外部通信なし・オフライン動作</b>／音声はOS内蔵の読み上げ機能を使用）。
     実際の削減効果は業務内容・データ整備状況により異なります。
-    <span style="display:block;margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--text-3)">build 2026-09-09c</span>
+    <span style="display:block;margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--text-3)">build 2026-09-09d</span>
   </div>
 </main>
 
@@ -1627,9 +1627,12 @@ function srcOf(scId, step){
 /* ============================ 音声（Web Speech API・端末内で処理） */
 const VOICE = {
   ok: (typeof window !== 'undefined') && ('speechSynthesis' in window) && ('SpeechSynthesisUtterance' in window),
-  on: true, v: null, list: [], last: '', q: 0, unlocked: false, blocked: false
+  on: true, v: null, list: [], last: '', q: 0, unlocked: false, blocked: false,
+  mode: 'voice',      /* voice = 音声を指定 / lang = 言語だけ / plain = 何も指定しない */
+  keep: [], hb: null
 };
 const VOICE_PREF = ['Kyoko','O-ren','Otoya','Google 日本語','Microsoft Nanami','Microsoft Haruka','Microsoft Ayumi','Microsoft Ichiro','Hattori','Sayaka'];
+const VOICE_MODES = ['voice','lang','plain'];
 const LS = {
   get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
   set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
@@ -1647,47 +1650,92 @@ function forSpeech(x){
     .replace(/、{2,}/g, '、');
 }
 
-/* 発話は「積む」。切るのは要所だけ。
-   毎回 cancel すると次の行が前の行を途中で切ってしまい、結果的に何も聞こえなくなる。 */
-function enqueue(t, retry){
-  try{
-    try{ speechSynthesis.resume(); }catch(e){}   /* 停止状態のまま固まっている端末への保険 */
-    const u = new SpeechSynthesisUtterance(t);
-    if(VOICE.v){ try{ u.voice = VOICE.v; }catch(e){} }   /* 音声の指定に失敗しても読み上げは続ける */
-    u.lang = 'ja-JP';
-    u.rate = Math.min(1.7, Math.max(0.7, 1.02 * st.speed));
-    u.pitch = 1; u.volume = 1;
-    VOICE.q++;
-    const done = () => { VOICE.q = Math.max(0, VOICE.q - 1); paintSpeaking(); };
-    u.onstart = () => { VOICE.blocked = false; paintVoiceBtn(); paintSpeaking(); };
-    u.onend = done;
-    u.onerror = (e) => {
-      done();
-      const err = e && e.error;
-      if(err === 'not-allowed' || err === 'blocked' || err === 'audio-busy'){
-        VOICE.blocked = true; paintVoiceBtn();   /* ブラウザが止めた場合はボタンで知らせる */
-      }
-    };
-    speechSynthesis.speak(u);
-
-    /* 見張り：speaking のまま start が来ない「キューの固まり」を検知して復帰させる。
-       ページが裏に回ると再生が始まらない環境があり、そのまま溜まると以降ずっと無音になる。 */
-    let started = false;
-    u.addEventListener('start', () => { started = true; });
-    setTimeout(() => {
-      if(started || !VOICE.on) return;
-      VOICE.q = Math.max(0, VOICE.q - 1); paintSpeaking();
-      try{ speechSynthesis.cancel(); }catch(e){}
-      if(document.hidden) return;                 /* 裏にいる間は諦める。表に戻れば次の行から鳴る */
-      if((retry || 0) < 1){ setTimeout(() => { if(VOICE.on) enqueue(t, 1); }, 300); }
-      else { VOICE.blocked = true; paintVoiceBtn(); }
-    }, 1200);
-  }catch(e){ VOICE.q = 0; }
+/* 音声の一覧は毎回取り直す。古い参照を渡すと Chrome はエラーも出さずに黙る。 */
+function pickVoice(){
+  if(!VOICE.ok) return null;
+  const all = speechSynthesis.getVoices() || [];
+  const ja = all.filter(v => /^ja/i.test(v.lang || ''));
+  if(ja.length){
+    VOICE.list = ja.slice().sort((a,c) => (c.localService?1:0) - (a.localService?1:0));
+  }
+  const saved = LS.get('agentdemo.voiceName');
+  VOICE.v = VOICE.list.find(v => v.name === saved)
+         || VOICE.list.filter(v => v.localService).find(v => VOICE_PREF.some(n => v.name.indexOf(n) >= 0))
+         || VOICE.list.find(v => VOICE_PREF.some(n => v.name.indexOf(n) >= 0))
+         || VOICE.list[0] || null;
+  return VOICE.v;
 }
+
+/* 発話オブジェクトは参照を残す。ローカル変数のままだと GC され、無言のまま終わる端末がある。 */
+function buildUtterance(t, mode){
+  const u = new SpeechSynthesisUtterance(t);
+  if(mode === 'voice'){
+    const v = pickVoice();
+    if(v){ try{ u.voice = v; }catch(e){} }
+    u.lang = 'ja-JP';
+  } else if(mode === 'lang'){
+    u.lang = 'ja-JP';
+  }
+  u.rate = Math.min(1.7, Math.max(0.7, 1.02 * (typeof st !== 'undefined' ? st.speed : 1)));
+  u.pitch = 1; u.volume = 1;
+  VOICE.keep.push(u);
+  if(VOICE.keep.length > 12) VOICE.keep.shift();
+  return u;
+}
+
+/* Chrome は長い発話を途中で止めることがある。鳴っている間だけ resume を打ち続ける。 */
+function heartbeat(){
+  if(VOICE.hb) return;
+  VOICE.hb = setInterval(() => {
+    if(!speechSynthesis.speaking){ clearInterval(VOICE.hb); VOICE.hb = null; return; }
+    if(typeof st !== 'undefined' && st.paused) return;
+    try{ speechSynthesis.resume(); }catch(e){}
+  }, 8000);
+}
+
 function paintSpeaking(){
   const b = $('voiceBtn'); if(!b) return;
   b.classList.toggle('speaking', VOICE.q > 0);
 }
+
+function enqueue(t, modeIdx){
+  if(!VOICE.ok) return;
+  const mi = (typeof modeIdx === 'number') ? modeIdx : Math.max(0, VOICE_MODES.indexOf(VOICE.mode));
+  const mode = VOICE_MODES[mi] || 'voice';
+  try{
+    try{ speechSynthesis.resume(); }catch(e){}
+    const u = buildUtterance(t, mode);
+    VOICE.q++;
+    let started = false;
+    const done = () => { VOICE.q = Math.max(0, VOICE.q - 1); paintSpeaking(); };
+    u.onstart = () => {
+      started = true; VOICE.blocked = false;
+      if(VOICE.mode !== mode){ VOICE.mode = mode; LS.set('agentdemo.voiceMode', mode); }  /* 効いた方式を覚える */
+      paintVoiceBtn(); paintSpeaking(); heartbeat();
+    };
+    u.onend = done;
+    u.onerror = (e) => {
+      done();
+      const err = e && e.error;
+      if(err === 'not-allowed' || err === 'blocked'){ VOICE.blocked = true; paintVoiceBtn(); }
+    };
+    speechSynthesis.speak(u);
+
+    /* 見張り：エラーも出さずに開始しない場合、指定を一段外して鳴らし直す */
+    setTimeout(() => {
+      if(started || !VOICE.on) return;
+      VOICE.q = Math.max(0, VOICE.q - 1); paintSpeaking();
+      try{ speechSynthesis.cancel(); }catch(e){}
+      if(document.hidden) return;              /* 裏にいる間は諦める。表に戻れば次の行から鳴る */
+      if(mi + 1 < VOICE_MODES.length){
+        setTimeout(() => { if(VOICE.on) enqueue(t, mi + 1); }, 280);
+      } else {
+        VOICE.blocked = true; paintVoiceBtn();
+      }
+    }, 1400);
+  }catch(e){ VOICE.q = 0; }
+}
+
 function say(text, opt){
   if(!VOICE.ok || !VOICE.on) return;
   let t = forSpeech(text);
@@ -1702,12 +1750,13 @@ function say(text, opt){
     if(!speechSynthesis.speaking && !speechSynthesis.pending){ enqueue(t); return; }
     try{ speechSynthesis.cancel(); }catch(e){}
     VOICE.q = 0; paintSpeaking();
-    setTimeout(() => { if(VOICE.on) enqueue(t); }, 160);
+    setTimeout(() => { if(VOICE.on) enqueue(t); }, 220);   /* cancel の直後に speak すると取りこぼす */
     return;
   }
   if(VOICE.q >= 2) return;        /* 溜まってきたら読み飛ばして映像に追いつく */
   enqueue(t);
 }
+
 /* 最初のクリックで読み上げを解錠する（自動再生制限の回避） */
 function unlockVoice(){
   if(!VOICE.ok || VOICE.unlocked) return;
@@ -1716,6 +1765,7 @@ function unlockVoice(){
     speechSynthesis.resume();
     const u = new SpeechSynthesisUtterance('あ');   /* 空文字は読み飛ばされるため実文字を使う */
     u.lang = 'ja-JP'; u.volume = 0; u.rate = 10;    /* 無音・一瞬で終わる */
+    VOICE.keep.push(u);
     speechSynthesis.speak(u);
   }catch(e){}
 }
@@ -1744,41 +1794,66 @@ function paintVoiceSel(){
     '<option value="'+esc(v.name)+'"'+(VOICE.v && v.name===VOICE.v.name ? ' selected':'')+'>'+
     esc(v.name) + (v.localService ? '' : '（ネット経由）') + '</option>').join('');
 }
-function voiceTest(){
+
+/* ---- 自己診断：3つの方式を順に試し、鳴った方式を記憶する ---- */
+function vnote(msg, kind){
   const out = $('vtestOut'); if(!out) return;
-  const note = (msg, kind) => {
-    out.textContent = msg;
-    out.className = 'vtest-out' + (kind ? ' ' + kind : '');
-  };
-  if(!VOICE.ok){ note('この端末のブラウザは音声読み上げに対応していません。', 'ng'); return; }
-  if(!VOICE.list.length){ note('この端末に日本語の読み上げ音声が入っていません。OSの音声設定をご確認ください。', 'ng'); return; }
-  try{ speechSynthesis.cancel(); }catch(e){}
-  VOICE.q = 0;
-  note('再生中…', '');
-  const u = new SpeechSynthesisUtterance('音声テストです。これが聞こえていれば設定は正常です。');
-  u.lang = 'ja-JP'; if(VOICE.v){ try{ u.voice = VOICE.v; }catch(e){} }
-  const t0 = Date.now();
-  let started = false;
-  u.onstart = () => { started = true; VOICE.blocked = false; paintVoiceBtn(); };
-  u.onend = () => note('再生できました（' + (VOICE.v ? VOICE.v.name : '既定の音声') + '／' +
-      ((Date.now()-t0)/1000).toFixed(1) + '秒）。聞こえない場合は端末の音量と出力先をご確認ください。', 'ok');
-  u.onerror = e => {
-    const err = e && e.error;
-    if(err === 'not-allowed' || err === 'blocked'){
-      VOICE.blocked = true; paintVoiceBtn();
-      note('ブラウザが再生を止めました。実行画面の「音声」ボタンを一度押すと有効になります。', 'ng');
-    } else if(err !== 'canceled' && err !== 'interrupted'){
-      note('再生に失敗しました（' + err + '）。', 'ng');
+  out.textContent = msg;
+  out.className = 'vtest-out' + (kind ? ' ' + kind : '');
+}
+function tryOnce(text, mode, waitMs){
+  return new Promise(resolve => {
+    let started = false, err = null;
+    let u;
+    try{ u = buildUtterance(text, mode); }
+    catch(e){ resolve({mode, started:false, err:'build-failed'}); return; }
+    u.onstart = () => { started = true; };
+    u.onerror = e => { err = e && e.error; };
+    try{ speechSynthesis.speak(u); }
+    catch(e){ resolve({mode, started:false, err:'speak-failed'}); return; }
+    setTimeout(() => resolve({mode, started, err}), waitMs);
+  });
+}
+async function voiceTest(){
+  if(!VOICE.ok){ vnote('この端末のブラウザは音声読み上げに対応していません。', 'ng'); return; }
+  pickVoice(); paintVoiceSel();
+  if(!VOICE.list.length){ vnote('この端末に日本語の読み上げ音声が入っていません。OSの音声設定をご確認ください。', 'ng'); return; }
+
+  const btn = $('vtestBtn'); if(btn) btn.disabled = true;
+  const LABEL = {voice:'音声を指定', lang:'言語のみ指定', plain:'指定なし'};
+  const text = '音声テストです。これが聞こえていれば設定は正常です。';
+  const tried = [];
+  try{
+    for(let i = 0; i < VOICE_MODES.length; i++){
+      const mode = VOICE_MODES[i];
+      vnote('確認中…（' + (i+1) + '/3・' + LABEL[mode] + '）', '');
+      try{ speechSynthesis.cancel(); }catch(e){}
+      await new Promise(r => setTimeout(r, 350));   /* cancel の直後に speak すると Chrome が黙る */
+      const r = await tryOnce(text, mode, 2600);
+      tried.push(LABEL[mode] + (r.started ? '○' : (r.err ? '×(' + r.err + ')' : '×')));
+      if(r.err === 'not-allowed' || r.err === 'blocked'){
+        VOICE.blocked = true; paintVoiceBtn();
+        vnote('ブラウザが再生を止めました。実行画面の「音声」ボタンを一度押すと有効になります。', 'ng');
+        return;
+      }
+      if(r.started){
+        VOICE.mode = mode; LS.set('agentdemo.voiceMode', mode);
+        VOICE.blocked = false; paintVoiceBtn();
+        vnote('再生できました（' + LABEL[mode] +
+          (mode === 'voice' && VOICE.v ? '・' + VOICE.v.name : '') +
+          '）。以降この方式で読み上げます。聞こえない場合は端末の音量と出力先をご確認ください。', 'ok');
+        return;
+      }
     }
-  };
-  try{ speechSynthesis.speak(u); }catch(e){ note('再生を開始できませんでした。', 'ng'); return; }
-  setTimeout(() => {
-    if(started) return;
     try{ speechSynthesis.cancel(); }catch(e){}
-    note(document.hidden
-      ? 'このページが裏に回っているため再生されませんでした。デモの画面を前面にしてもう一度お試しください。'
-      : '再生が始まりませんでした。ほかのタブやアプリが音声を使っていないか、端末の音量と出力先をご確認ください。', 'ng');
-  }, 2500);
+    vnote(document.hidden
+      ? 'このページが裏に回っているため再生されませんでした。画面を前面にして、もう一度お試しください。'
+      : '3方式とも再生が始まりませんでした（' + tried.join(' / ') + '）。'
+        + 'ブラウザを一度終了して開き直すか、別のブラウザでお試しください。'
+        + 'システム環境設定の「読み上げコンテンツ」で日本語の声がダウンロード済みかもご確認ください。', 'ng');
+  } finally {
+    if(btn) btn.disabled = false;
+  }
 }
 
 function initVoice(){
@@ -1788,6 +1863,7 @@ function initVoice(){
     VOICE.on = false; paintVoiceBtn(); return;
   }
   VOICE.on = LS.get('agentdemo.voice') !== 'off';
+  VOICE.mode = LS.get('agentdemo.voiceMode') || 'voice';
   paintVoiceBtn();
   try{ speechSynthesis.cancel(); }catch(e){}    /* 前のページから残ったキューを掃除 */
   document.addEventListener('visibilitychange', () => {
@@ -1795,23 +1871,14 @@ function initVoice(){
   });
 
   const load = () => {
-    const all = speechSynthesis.getVoices() || [];
-    VOICE.list = all.filter(v => /^ja/i.test(v.lang || ''));
-    /* 端末内蔵の音声を優先（閉域網でも動くため） */
-    VOICE.list.sort((a,c) => (c.localService?1:0) - (a.localService?1:0));
-    const saved = LS.get('agentdemo.voiceName');
-    VOICE.v = VOICE.list.find(v => v.name === saved)
-           || VOICE.list.filter(v=>v.localService).find(v => VOICE_PREF.some(n => v.name.indexOf(n) >= 0))
-           || VOICE.list.find(v => VOICE_PREF.some(n => v.name.indexOf(n) >= 0))
-           || VOICE.list[0] || null;
+    pickVoice();
     paintVoiceSel();
-    if(b) b.title = VOICE.v
-      ? '読み上げ音声：' + VOICE.v.name + (VOICE.v.localService ? '（端末内で処理）' : '（ネットワーク経由の音声です）')
-      : 'この端末に日本語の読み上げ音声が見つかりません';
-    if(!VOICE.list.length && b) b.title = 'この端末に日本語の読み上げ音声が見つかりません（英語音声で読み上げます）';
+    paintVoiceBtn();
+    if(!VOICE.list.length && b) b.title = 'この端末に日本語の読み上げ音声が見つかりません';
   };
   load();
   speechSynthesis.addEventListener('voiceschanged', load);
+  setTimeout(load, 800);          /* 一覧が遅れて届く端末への保険 */
   document.addEventListener('pointerdown', unlockVoice, {once:true, capture:true});
   document.addEventListener('click', unlockVoice, {once:true, capture:true});
   document.addEventListener('keydown', unlockVoice, {once:true, capture:true});
@@ -1834,7 +1901,8 @@ function initVoice(){
   $('voiceSel').onchange = e => {
     VOICE.v = VOICE.list.find(v => v.name === e.target.value) || VOICE.v;
     if(VOICE.v) LS.set('agentdemo.voiceName', VOICE.v.name);
-    say('この声で読み上げます。');
+    VOICE.mode = 'voice'; LS.set('agentdemo.voiceMode', 'voice');
+    say('この声で読み上げます。', {priority:true});
   };
 }
 

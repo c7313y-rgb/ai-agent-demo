@@ -660,6 +660,23 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
 }
 .limitbanner b{color:var(--gate)}
 
+
+/* ============ 音声コントロール ============ */
+.vwrap{display:flex;align-items:center;gap:6px}
+.vbtn{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.vbtn svg{width:13px;height:13px;flex:none}
+.vbtn.on{color:#fff;background:var(--accent);border-color:var(--accent)}
+.vbtn.on:hover:not(:disabled){background:var(--accent-2);border-color:var(--accent-2);color:#fff}
+.vbtn.speaking svg{animation:vpulse .9s ease-in-out infinite}
+@keyframes vpulse{0%,100%{opacity:1}50%{opacity:.35}}
+.vsel{
+  font-family:inherit;font-size:11px;padding:6px 7px;border-radius:6px;
+  border:1px solid var(--line);background:var(--panel);color:var(--text-2);
+  max-width:132px;text-overflow:ellipsis;
+}
+.vsel:hover{border-color:var(--accent)}
+.vnote{font-size:10px;color:var(--text-3);line-height:1.5}
+
 /* ============ print — 成果物だけを出す ============ */
 @media print{
   @page{margin:14mm}
@@ -739,7 +756,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
         <div class="gov-item"><h4>止まる条件</h4><p>確信度が基準を下回る／補完データがない／社内基準を外れる場合は自動処理を中止します。しきい値は業務ごとに御社が設定します。</p></div>
         <div class="gov-item"><h4>データの置き場所</h4><p>実装時は、参照データの保存先・保持期間・アクセス権限を業務ごとに定義します。学習への二次利用の可否も契約で明示します。</p></div>
         <div class="gov-item"><h4>権限管理（画面で試せます）</h4><p>エージェントに渡す権限は業務単位で最小化します。実行画面の左側「参照を許可するデータ」でOFFにすると、その工程を飛ばし、何ができなくなるかがその場で分かります。送信権限は原則として渡しません。</p></div>
-        <div class="gov-item"><h4>このデモの構成</h4><p>単一HTMLファイル。外部通信・外部送信は一切ありません。閉域網のPCでもそのまま動きます。入力した数値もブラウザ内に留まります。</p></div>
+        <div class="gov-item"><h4>このデモの構成</h4><p>単一HTMLファイル。外部通信・外部送信は一切ありません。閉域網のPCでもそのまま動きます。入力した数値もブラウザ内に留まります。</p></div><div class="gov-item"><h4>音声読み上げ</h4><p>エージェントの発話はOS内蔵の読み上げ機能（端末内で処理）を使います。端末内蔵の音声を優先して選びますが、環境によってはネットワーク経由の音声しかない場合があります。実行画面の「音声」ボタンでいつでも切れます。</p></div>
       </div>
     </div>
   </div>
@@ -755,7 +772,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
 
   <div class="note">
     <b>本デモの位置づけ</b> — 登場する企業名・数値・帳票はすべて架空のサンプルです。実在の企業・取引とは関係ありません。
-    エージェントの処理は事前設計したシナリオを再生しています（<b>外部通信なし・オフライン動作</b>）。
+    エージェントの処理は事前設計したシナリオを再生しています（<b>外部通信なし・オフライン動作</b>／音声はOS内蔵の読み上げ機能を使用）。
     実際の削減効果は業務内容・データ整備状況により異なります。
   </div>
 </main>
@@ -779,6 +796,12 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
         <div class="clock ai"><em>AIエージェント</em><b class="num" id="clkAi">0.0秒</b></div>
       </div>
       <div class="ctrls">
+        <div class="vwrap">
+          <button class="cbtn vbtn" id="voiceBtn" type="button" aria-pressed="true" title="エージェントの音声読み上げ">
+            <span id="voiceIco"></span><span id="voiceLbl">音声 ON</span>
+          </button>
+          <select class="vsel" id="voiceSel" hidden aria-label="読み上げ音声の選択"></select>
+        </div>
         <div class="speed" id="speed">
           <button type="button" data-s="0.5">0.5x</button>
           <button type="button" data-s="1" class="on">1x</button>
@@ -1538,7 +1561,9 @@ const SVG = {
   arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
   clip:'<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
   alert:'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/>',
-  stop:'<circle cx="12" cy="12" r="9"/><path d="M9 9h6v6H9z"/>'
+  stop:'<circle cx="12" cy="12" r="9"/><path d="M9 9h6v6H9z"/>',
+  spkOn:'<path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>',
+  spkOff:'<path d="M11 5L6 9H2v6h4l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/>'
 };
 const ico = (k, w) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||1.8)+'" stroke-linecap="round" stroke-linejoin="round">'+SVG[k]+'</svg>';
 const el = (h) => { const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.firstElementChild; };
@@ -1588,6 +1613,113 @@ function srcOf(scId, step){
   const list = SOURCES[scId] || [];
   const hit = list.find(x => x.tool && x.tool === step.tools[0].n);
   return hit || null;
+}
+
+
+/* ============================ 音声（Web Speech API・端末内で処理） */
+const VOICE = {
+  ok: (typeof window !== 'undefined') && ('speechSynthesis' in window) && ('SpeechSynthesisUtterance' in window),
+  on: true, v: null, list: [], last: ''
+};
+const VOICE_PREF = ['Kyoko','O-ren','Otoya','Google 日本語','Microsoft Nanami','Microsoft Haruka','Microsoft Ayumi','Microsoft Ichiro','Hattori','Sayaka'];
+const LS = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+};
+
+function stripTags(x){ return String(x).replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim(); }
+/* 読み上げ用の軽い整形（画面表示はそのまま） */
+function forSpeech(x){
+  return stripTags(x)
+    .replace(/¥\s?([0-9][0-9,\.]*)/g, '$1円')
+    .replace(/[／]/g, '、')
+    .replace(/[〜～]/g, 'から')
+    .replace(/×/g, 'かける')
+    .replace(/\s*、\s*/g, '、')
+    .replace(/、{2,}/g, '、');
+}
+
+function say(text){
+  if(!VOICE.ok || !VOICE.on) return;
+  let t = forSpeech(text);
+  if(!t) return;
+  if(t.length > 110) t = t.slice(0,108) + '。';
+  if(t === VOICE.last && speechSynthesis.speaking) return;
+  VOICE.last = t;
+  try{
+    speechSynthesis.cancel();               /* 常に映像に同期させる */
+    const u = new SpeechSynthesisUtterance(t);
+    if(VOICE.v){ try{ u.voice = VOICE.v; }catch(e){} }   /* 音声の指定に失敗しても読み上げは続ける */
+    u.lang = 'ja-JP';
+    u.rate = Math.min(1.7, Math.max(0.7, 1.02 * st.speed));
+    u.pitch = 1; u.volume = 1;
+    u.onstart = () => { const b=$('voiceBtn'); if(b) b.classList.add('speaking'); };
+    const off = () => { const b=$('voiceBtn'); if(b && !speechSynthesis.speaking) b.classList.remove('speaking'); };
+    u.onend = off; u.onerror = off;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function voiceStop(){
+  if(!VOICE.ok) return;
+  try{ speechSynthesis.cancel(); }catch(e){}
+  VOICE.last = '';
+  const b=$('voiceBtn'); if(b) b.classList.remove('speaking');
+}
+function paintVoiceBtn(){
+  const b = $('voiceBtn'); if(!b) return;
+  b.classList.toggle('on', VOICE.on);
+  b.setAttribute('aria-pressed', String(VOICE.on));
+  $('voiceIco').innerHTML = ico(VOICE.on ? 'spkOn' : 'spkOff', 2);
+  $('voiceLbl').textContent = VOICE.on ? '音声 ON' : '音声 OFF';
+}
+function paintVoiceSel(){
+  const sel = $('voiceSel'); if(!sel) return;
+  if(VOICE.list.length < 2){ sel.hidden = true; return; }
+  sel.hidden = false;
+  sel.innerHTML = VOICE.list.map(v =>
+    '<option value="'+esc(v.name)+'"'+(VOICE.v && v.name===VOICE.v.name ? ' selected':'')+'>'+
+    esc(v.name) + (v.localService ? '' : '（ネット経由）') + '</option>').join('');
+}
+function initVoice(){
+  const b = $('voiceBtn');
+  if(!VOICE.ok){
+    if(b){ b.disabled = true; b.title = 'この端末は音声読み上げに対応していません'; }
+    VOICE.on = false; paintVoiceBtn(); return;
+  }
+  VOICE.on = LS.get('agentdemo.voice') !== 'off';
+  paintVoiceBtn();
+
+  const load = () => {
+    const all = speechSynthesis.getVoices() || [];
+    VOICE.list = all.filter(v => /^ja/i.test(v.lang || ''));
+    /* 端末内蔵の音声を優先（閉域網でも動くため） */
+    VOICE.list.sort((a,c) => (c.localService?1:0) - (a.localService?1:0));
+    const saved = LS.get('agentdemo.voiceName');
+    VOICE.v = VOICE.list.find(v => v.name === saved)
+           || VOICE.list.filter(v=>v.localService).find(v => VOICE_PREF.some(n => v.name.indexOf(n) >= 0))
+           || VOICE.list.find(v => VOICE_PREF.some(n => v.name.indexOf(n) >= 0))
+           || VOICE.list[0] || null;
+    paintVoiceSel();
+    if(b) b.title = VOICE.v
+      ? '読み上げ音声：' + VOICE.v.name + (VOICE.v.localService ? '（端末内で処理）' : '（ネットワーク経由の音声です）')
+      : 'この端末に日本語の読み上げ音声が見つかりません';
+    if(!VOICE.list.length && b) b.title = 'この端末に日本語の読み上げ音声が見つかりません（英語音声で読み上げます）';
+  };
+  load();
+  speechSynthesis.addEventListener('voiceschanged', load);
+
+  b.onclick = () => {
+    VOICE.on = !VOICE.on;
+    LS.set('agentdemo.voice', VOICE.on ? 'on' : 'off');
+    paintVoiceBtn();
+    if(!VOICE.on) voiceStop();
+    else say('音声をオンにしました。');
+  };
+  $('voiceSel').onchange = e => {
+    VOICE.v = VOICE.list.find(v => v.name === e.target.value) || VOICE.v;
+    if(VOICE.v) LS.set('agentdemo.voiceName', VOICE.v.name);
+    say('この声で読み上げます。');
+  };
 }
 
 /* ================================================================== HUB */
@@ -1659,6 +1791,7 @@ function openRun(scId, vId, push){
   if(!sc) return;
   const v = sc.variants.find(x=>x.id===vId) || sc.variants[0];
   st.token++; st.sc=sc; st.v=v; st.paused=false; st.elapsed=0; st.audit=[];
+  voiceStop();
   st.src={}; (SOURCES[sc.id]||[]).forEach(x=>{ st.src[x.id] = true; });
   $('hub').classList.add('off'); $('run').classList.add('on');
   window.scrollTo(0,0);
@@ -1682,6 +1815,10 @@ function openRun(scId, vId, push){
     const h = '#'+sc.id+'/'+v.id;
     if(location.hash !== h){ st.nav=true; history.pushState({sc:sc.id,v:v.id}, '', h); st.nav=false; }
   }
+  const vlabel = v.label.replace(/\s+/g, '');
+  say(sc.noRoi
+    ? sc.title + 'のデモを始めます。「' + vlabel + '」というケースです。'
+    : sc.title + 'を開始します。' + v.co + '、' + vlabel + 'のケースです。');
   run(sc, v);
 }
 function runId(){
@@ -1689,7 +1826,7 @@ function runId(){
     Math.random().toString(36).slice(2,6).toUpperCase();
 }
 function backToHub(push){
-  st.token++; stopTimer();
+  st.token++; stopTimer(); voiceStop();
   $('run').classList.remove('on'); $('hub').classList.remove('off');
   window.scrollTo(0,0);
   if(push !== false && location.hash){ st.nav=true; history.pushState({}, '', location.pathname); st.nav=false; }
@@ -1720,6 +1857,7 @@ $('nextAgain').onclick = () => openRun(st.sc.id, st.v.id, false);
 $('pauseBtn').onclick = () => {
   st.paused = !st.paused;
   $('pauseBtn').textContent = st.paused ? '再開' : '一時停止';
+  if(VOICE.ok){ try{ st.paused ? speechSynthesis.pause() : speechSynthesis.resume(); }catch(e){} }
 };
 $('speed').onclick = e => {
   const b = e.target.closest('button[data-s]'); if(!b) return;
@@ -1840,6 +1978,8 @@ function addBullets(items){
   });
 }
 
+initVoice();
+
 /* ============================================================ タイマー */
 function startTimer(){
   stopTimer(); st.t0 = performance.now();
@@ -1883,6 +2023,12 @@ async function run(sc, v){
       /* 完了 / 停止 */
       if(s.done || s.halt){
         const isHalt = !!s.halt;
+        if(isHalt){
+          say(s.halt);
+        } else {
+          const cut = Math.round((1 - sc.aiMin / sc.baseMin) * 100);
+          say(s.done + ' 担当者の作業時間は' + fmtMin(sc.aiMin) + '。従来の' + fmtMin(sc.baseMin) + 'から' + cut + 'パーセントの削減です。');
+        }
         feed.appendChild(el('<div class="done-line'+(isHalt?' halt':'')+'">'+
           ico(isHalt?'stop':'check', isHalt?2:2.6)+'<span>'+esc(s.done||s.halt)+'</span></div>'));
         scrollFeed();
@@ -1901,6 +2047,7 @@ async function run(sc, v){
           '<span>「'+esc(srcMeta.label)+'」は参照が許可されていないため、この工程を飛ばします。</span></div>'+
           '<div class="find skip"><span>'+esc(srcMeta.off)+'</span></div></div>');
         feed.appendChild(sk); scrollFeed();
+        say('「' + srcMeta.label + '」は参照が許可されていません。この工程を飛ばします。');
         audit('gate', '<b>工程をスキップ</b> — '+esc(srcMeta.label)+' の参照権限が OFF（'+esc(srcMeta.tool)+' を実行せず）');
         await wait(1600);
         continue;
@@ -1913,6 +2060,7 @@ async function run(sc, v){
       const txt = wrap.querySelector('.step-x');
       const caret = el('<span class="caret"></span>');
       wrap.querySelector('.step-t').appendChild(caret);
+      if(n === 1) say(s.t);
       await type(txt, s.t);
       caret.remove();
 
@@ -1940,6 +2088,7 @@ async function run(sc, v){
       /* 所見 */
       if(s.find){
         wrap.appendChild(el('<div class="find'+(s.find.warn?' warn':'')+'"><span>'+s.find.x+'</span></div>'));
+        if(!s.gate) say(s.find.x);          /* 承認がある工程は、承認の呼びかけを優先する */
         scrollFeed(); await wait(500);
       }
 
@@ -1961,6 +2110,7 @@ async function run(sc, v){
         $('liveDot').className = 'dot wait';
         $('conTag').textContent = 'WAITING FOR HUMAN';
         const g = s.gate;
+        say((s.find ? stripTags(s.find.x) + ' ' : '') + g.title + '。ご判断をお願いします。');
         audit('gate', '<b>人の判断を要求</b> — '+esc(g.title)+'（自動処理を一時停止）');
         const box = el('<div class="gate"><div class="gate-hd">'+ico('alert',2.2)+
           '<h4>'+esc(g.title)+'</h4></div><p>'+esc(g.body)+'</p>'+
@@ -1982,6 +2132,7 @@ async function run(sc, v){
           const iv = setInterval(()=>{ if(st.token!==token){ clearInterval(iv); reject(new Error('abort')); } }, 200);
           setTimeout(()=>clearInterval(iv), 900000);
         });
+        say('担当者が「' + chosen.label + '」を選択しました。処理を再開します。');
         audit('gate', '<b>担当者が承認</b> — 「'+esc(chosen.label)+'」を選択（以降の処理はこの判断に従う）');
         $('liveDot').className = 'dot live';
         $('conTag').textContent = 'RUNNING';

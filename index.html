@@ -763,7 +763,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
         <div class="gov-item"><h4>止まる条件</h4><p>確信度が基準を下回る／補完データがない／社内基準を外れる場合は自動処理を中止します。しきい値は業務ごとに御社が設定します。</p></div>
         <div class="gov-item"><h4>データの置き場所</h4><p>実装時は、参照データの保存先・保持期間・アクセス権限を業務ごとに定義します。学習への二次利用の可否も契約で明示します。</p></div>
         <div class="gov-item"><h4>権限管理（画面で試せます）</h4><p>エージェントに渡す権限は業務単位で最小化します。実行画面の左側「参照を許可するデータ」でOFFにすると、その工程を飛ばし、何ができなくなるかがその場で分かります。送信権限は原則として渡しません。</p></div>
-        <div class="gov-item"><h4>このデモの構成</h4><p>単一HTMLファイル。外部通信・外部送信は一切ありません。閉域網のPCでもそのまま動きます。入力した数値もブラウザ内に留まります。</p></div><div class="gov-item"><h4>音声読み上げ</h4><p>エージェントの発話はOS内蔵の読み上げ機能（端末内で処理）を使います。端末内蔵の音声を優先して選びますが、環境によってはネットワーク経由の音声しかない場合があります。実行画面の「音声」ボタンでいつでも切れます。</p></div><div class="gov-item"><h4>音声が鳴らないとき</h4><p>ブラウザは、利用者が一度も操作していないページの自動再生を止めます。<b>実行画面の「音声」ボタンを一度押す</b>と有効になります。また、デモの画面が裏に回っていると再生されません。下のボタンで、この端末で鳴るかどうかをその場で確認できます（3つの再生方式を順に試し、鳴った方式を記憶します）。</p><div class="vtest"><button class="sbtn" id="vtestBtn" type="button">音声テストを再生</button><span class="vtest-out" id="vtestOut">未実施</span></div></div>
+        <div class="gov-item"><h4>このデモの構成</h4><p>単一HTMLファイル。外部通信・外部送信は一切ありません。閉域網のPCでもそのまま動きます。入力した数値もブラウザ内に留まります。</p></div><div class="gov-item"><h4>音声読み上げ</h4><p>エージェントの発話はOS内蔵の読み上げ機能（端末内で処理）を使います。端末内蔵の音声を優先して選びますが、環境によってはネットワーク経由の音声しかない場合があります。実行画面の「音声」ボタンでいつでも切れます。読み上げが使えない端末では、音の合図（チャイム）に自動で切り替わります。</p></div><div class="gov-item"><h4>音声が鳴らないとき</h4><p>ブラウザは、利用者が一度も操作していないページの自動再生を止めます。<b>実行画面の「音声」ボタンを一度押す</b>と有効になります。また、デモの画面が裏に回っていると再生されません。下のボタンで<b>チャイム→読み上げの順に試し</b>、この端末で何が鳴るかをその場で切り分けます。読み上げが動かない端末（ブラウザ側の不具合で無反応になることがあります）では、<b>開始・要所・完了をチャイムでお知らせする方式に自動で切り替わります</b>。デモの内容は変わりません。</p><div class="vtest"><button class="sbtn" id="vtestBtn" type="button">音声テストを再生</button><span class="vtest-out" id="vtestOut">未実施</span></div></div>
       </div>
     </div>
   </div>
@@ -781,7 +781,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
     <b>本デモの位置づけ</b> — 登場する企業名・数値・帳票はすべて架空のサンプルです。実在の企業・取引とは関係ありません。
     エージェントの処理は事前設計したシナリオを再生しています（<b>外部通信なし・オフライン動作</b>／音声はOS内蔵の読み上げ機能を使用）。
     実際の削減効果は業務内容・データ整備状況により異なります。
-    <span style="display:block;margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--text-3)">build 2026-09-09e</span>
+    <span style="display:block;margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--text-3)">build 2026-09-09f</span>
   </div>
 </main>
 
@@ -1632,7 +1632,7 @@ const VOICE = {
   keep: [], hb: null
 };
 const VOICE_PREF = ['Kyoko','O-ren','Otoya','Google 日本語','Microsoft Nanami','Microsoft Haruka','Microsoft Ayumi','Microsoft Ichiro','Hattori','Sayaka'];
-const VOICE_MODES = ['voice','lang','plain'];
+const VOICE_MODES = ['local','voice','lang','plain'];   /* 上から順に試し、鳴った方式を覚える */
 const LS = {
   get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
   set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
@@ -1648,6 +1648,39 @@ function forSpeech(x){
     .replace(/×/g, 'かける')
     .replace(/\s*、\s*/g, '、')
     .replace(/、{2,}/g, '、');
+}
+
+/* ---- 読み上げが使えない端末のための音（Web Audio）。音声合成に一切依存しない ---- */
+const AUD = { ctx:null, ok:null };
+function audioCtx(){
+  if(AUD.ctx) return AUD.ctx;
+  const C = window.AudioContext || window.webkitAudioContext;
+  if(!C){ AUD.ok = false; return null; }
+  try{ AUD.ctx = new C(); }catch(e){ AUD.ok = false; return null; }
+  return AUD.ctx;
+}
+function chime(kind){
+  const ctx = audioCtx(); if(!ctx) return false;
+  try{ if(ctx.state === 'suspended') ctx.resume(); }catch(e){}
+  const seq = kind === 'start' ? [[587,0],[880,0.13]]
+            : kind === 'done'  ? [[587,0],[784,0.11],[1175,0.22]]
+            : kind === 'gate'  ? [[784,0],[988,0.12]]
+            : [[880,0]];
+  const peak = (kind === 'note') ? 0.09 : 0.17;   /* 要所の合図は控えめに */
+  const t0 = ctx.currentTime + 0.02;
+  try{
+    seq.forEach(([f,dt]) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0+dt);
+      g.gain.exponentialRampToValueAtTime(peak, t0+dt+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0008, t0+dt+0.28);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t0+dt); o.stop(t0+dt+0.32);
+    });
+  }catch(e){ AUD.ok = false; return false; }
+  AUD.ok = true;
+  return true;
 }
 
 /* 音声の一覧は毎回取り直す。古い参照を渡すと Chrome はエラーも出さずに黙る。 */
@@ -1669,8 +1702,15 @@ function pickVoice(){
 /* 発話オブジェクトは参照を残す。ローカル変数のままだと GC され、無言のまま終わる端末がある。 */
 function buildUtterance(t, mode){
   const u = new SpeechSynthesisUtterance(t);
-  if(mode === 'voice'){
-    const v = pickVoice();
+  if(mode === 'local'){
+    pickVoice();
+    const v = VOICE.list.filter(x => x.localService)[0] || VOICE.v;
+    if(v){ try{ u.voice = v; }catch(e){} }
+    u.lang = 'ja-JP';
+  } else if(mode === 'voice'){
+    pickVoice();
+    /* 端末内の音声が無反応な端末に備え、ここではネット経由の音声を優先して試す */
+    const v = VOICE.list.filter(x => !x.localService)[0] || VOICE.v;
     if(v){ try{ u.voice = v; }catch(e){} }
     u.lang = 'ja-JP';
   } else if(mode === 'lang'){
@@ -1701,7 +1741,7 @@ function paintSpeaking(){
 function enqueue(t, modeIdx){
   if(!VOICE.ok) return;
   const mi = (typeof modeIdx === 'number') ? modeIdx : Math.max(0, VOICE_MODES.indexOf(VOICE.mode));
-  const mode = VOICE_MODES[mi] || 'voice';
+  const mode = VOICE_MODES[mi] || 'local';
   try{
     try{ speechSynthesis.resume(); }catch(e){}
     const u = buildUtterance(t, mode);
@@ -1730,14 +1770,22 @@ function enqueue(t, modeIdx){
       if(mi + 1 < VOICE_MODES.length){
         setTimeout(() => { if(VOICE.on) enqueue(t, mi + 1); }, 280);
       } else {
-        VOICE.blocked = true; paintVoiceBtn();
+        /* どの方式でも鳴らない端末：以降はチャイムで進行を知らせる */
+        VOICE.mode = 'chime'; LS.set('agentdemo.voiceMode', 'chime');
+        VOICE.blocked = false; paintVoiceBtn(); paintVoiceSel();
       }
     }, 1400);
   }catch(e){ VOICE.q = 0; }
 }
 
 function say(text, opt){
-  if(!VOICE.ok || !VOICE.on) return;
+  if(!VOICE.on) return;
+  if(VOICE.mode === 'chime'){                 /* 読み上げが動かない端末：要所だけ音で知らせる */
+    const k = opt && opt.kind;
+    if(k) chime(k);
+    return;
+  }
+  if(!VOICE.ok) return;
   let t = forSpeech(text);
   if(!t) return;
   if(t.length > 100) t = t.slice(0,98) + '。';        /* 長すぎる発話は途中で止まる端末があるため */
@@ -1759,6 +1807,8 @@ function say(text, opt){
 
 /* 最初のクリックで読み上げを解錠する（自動再生制限の回避） */
 function unlockVoice(){
+  const ac = audioCtx();                       /* 最初の操作で音の出口も開けておく */
+  if(ac){ try{ if(ac.state === 'suspended') ac.resume(); }catch(e){} }
   if(!VOICE.ok || VOICE.unlocked) return;
   VOICE.unlocked = true;
   try{
@@ -1781,14 +1831,17 @@ function paintVoiceBtn(){
   b.classList.toggle('blocked', !!VOICE.blocked);
   b.setAttribute('aria-pressed', String(VOICE.on));
   $('voiceIco').innerHTML = ico(VOICE.on ? 'spkOn' : 'spkOff', 2);
-  $('voiceLbl').textContent = VOICE.blocked ? '音声を有効化' : (VOICE.on ? '音声 ON' : '音声 OFF');
+  $('voiceLbl').textContent = VOICE.blocked ? '音声を有効化'
+    : (VOICE.on ? (VOICE.mode === 'chime' ? '音声（チャイム）' : '音声 ON') : '音声 OFF');
   b.title = VOICE.blocked
     ? 'ブラウザが自動再生を止めています。このボタンを押すと有効になります。'
+    : VOICE.mode === 'chime'
+    ? 'この端末では読み上げが動かないため、開始・要所・完了をチャイムでお知らせします。'
     : (VOICE.v ? '読み上げ音声：' + VOICE.v.name + (VOICE.v.localService ? '（端末内で処理）' : '（ネットワーク経由の音声です）') : 'エージェントの音声読み上げ');
 }
 function paintVoiceSel(){
   const sel = $('voiceSel'); if(!sel) return;
-  if(VOICE.list.length < 2){ sel.hidden = true; return; }
+  if(VOICE.mode === 'chime' || VOICE.list.length < 2){ sel.hidden = true; return; }
   sel.hidden = false;
   sel.innerHTML = VOICE.list.map(v =>
     '<option value="'+esc(v.name)+'"'+(VOICE.v && v.name===VOICE.v.name ? ' selected':'')+'>'+
@@ -1816,21 +1869,40 @@ function tryOnce(text, mode, waitMs){
   });
 }
 async function voiceTest(){
-  if(!VOICE.ok){ vnote('この端末のブラウザは音声読み上げに対応していません。', 'ng'); return; }
-  pickVoice(); paintVoiceSel();
-  if(!VOICE.list.length){ vnote('この端末に日本語の読み上げ音声が入っていません。OSの音声設定をご確認ください。', 'ng'); return; }
-
   const btn = $('vtestBtn'); if(btn) btn.disabled = true;
-  const LABEL = {voice:'音声を指定', lang:'言語のみ指定', plain:'指定なし'};
+  const LABEL = {local:'端末内の音声', voice:'ネット経由の音声', lang:'言語のみ指定', plain:'指定なし'};
   const text = '音声テストです。これが聞こえていれば設定は正常です。';
   const tried = [];
   try{
+    /* 段階1：音声合成を使わない音。ここが鳴らなければ原因は端末の音量・出力先 */
+    vnote('確認中…（1/2・チャイム）', '');
+    const beep = chime('done');
+    await new Promise(r => setTimeout(r, 900));
+    if(!beep){
+      vnote('この端末では音を出せませんでした（Web Audio 不可）。ブラウザの設定をご確認ください。', 'ng');
+      return;
+    }
+
+    if(!VOICE.ok){
+      useChime('このブラウザは読み上げ（音声合成）に対応していません');
+      return;
+    }
+    pickVoice(); paintVoiceSel();
+    if(!VOICE.list.length){
+      useChime('この端末に日本語の読み上げ音声が入っていません');
+      return;
+    }
+
+    /* 段階2：読み上げを方式を変えながら試す。1回目はあえて cancel を打たない */
     for(let i = 0; i < VOICE_MODES.length; i++){
       const mode = VOICE_MODES[i];
-      vnote('確認中…（' + (i+1) + '/3・' + LABEL[mode] + '）', '');
-      try{ speechSynthesis.cancel(); }catch(e){}
-      await new Promise(r => setTimeout(r, 350));   /* cancel の直後に speak すると Chrome が黙る */
-      const r = await tryOnce(text, mode, 2600);
+      if(mode === 'voice' && !VOICE.list.some(v => !v.localService)) continue;   /* ネット経由の音声が無い端末では飛ばす */
+      vnote('確認中…（2/2・' + LABEL[mode] + '）', '');
+      if(i > 0){
+        try{ speechSynthesis.cancel(); }catch(e){}
+        await new Promise(r => setTimeout(r, 350));   /* cancel の直後に speak すると Chrome が黙る */
+      }
+      const r = await tryOnce(text, mode, 2000);
       tried.push(LABEL[mode] + (r.started ? '○' : (r.err ? '×(' + r.err + ')' : '×')));
       if(r.err === 'not-allowed' || r.err === 'blocked'){
         VOICE.blocked = true; paintVoiceBtn();
@@ -1840,34 +1912,56 @@ async function voiceTest(){
       if(r.started){
         VOICE.mode = mode; LS.set('agentdemo.voiceMode', mode);
         VOICE.blocked = false; paintVoiceBtn();
-        vnote('再生できました（' + LABEL[mode] +
-          (mode === 'voice' && VOICE.v ? '・' + VOICE.v.name : '') +
-          '）。以降この方式で読み上げます。聞こえない場合は端末の音量と出力先をご確認ください。', 'ok');
+        const used = mode === 'local' ? (VOICE.list.filter(v => v.localService)[0] || VOICE.v)
+                   : mode === 'voice' ? (VOICE.list.filter(v => !v.localService)[0] || VOICE.v) : null;
+        vnote('チャイムと読み上げの両方を再生しました（' + LABEL[mode] +
+          (used ? '・' + used.name : '') +
+          '）。以降この方式で読み上げます。', 'ok');
         return;
       }
     }
     try{ speechSynthesis.cancel(); }catch(e){}
-    vnote(document.hidden
-      ? 'このページが裏に回っているため再生されませんでした。画面を前面にして、もう一度お試しください。'
-      : '3方式とも再生が始まりませんでした（' + tried.join(' / ')
-        + ' ／ 状態 paused=' + speechSynthesis.paused + ' speaking=' + speechSynthesis.speaking
-        + ' 音声数=' + VOICE.list.length + '）。'
-        + 'ブラウザを一度終了して開き直すか、別のブラウザでお試しください。'
-        + 'システム環境設定の「読み上げコンテンツ」で日本語の声がダウンロード済みかもご確認ください。', 'ng');
+    if(document.hidden){
+      vnote('このページが裏に回っているため再生されませんでした。画面を前面にして、もう一度お試しください。', 'ng');
+      return;
+    }
+    useChime('このブラウザの読み上げ機能が反応しません', tried);
   } finally {
     if(btn) btn.disabled = false;
   }
 }
 
+/* 読み上げが使えない端末は、チャイム方式に切り替えて運用できるようにする */
+function useChime(reason, tried){
+  VOICE.mode = 'chime'; LS.set('agentdemo.voiceMode', 'chime');
+  VOICE.blocked = false; paintVoiceBtn(); paintVoiceSel();
+  const local = VOICE.list.filter(v => v.localService).length;
+  const ua = /Chrome\/(\d+)/.test(navigator.userAgent) ? 'Chrome ' + RegExp.$1
+           : /Version\/([\d.]+).*Safari/.test(navigator.userAgent) ? 'Safari ' + RegExp.$1
+           : navigator.userAgent.slice(0, 40);
+  vnote('チャイムは鳴りました（音は出ています）。' + reason + 'でした。'
+    + 'この端末では読み上げの代わりにチャイムで開始・要所・完了をお知らせします（デモの内容は変わりません）。'
+    + '読み上げを使いたい場合はブラウザを再起動するか、Safari など別のブラウザでお開きください。'
+    + '［' + ua + '／日本語音声 ' + VOICE.list.length + '（端末内 ' + local + '）'
+    + (tried && tried.length ? '／' + tried.join(' ') : '') + '］', 'ng');
+}
+
 function initVoice(){
   const b = $('voiceBtn');
-  if(!VOICE.ok){
-    if(b){ b.disabled = true; b.title = 'この端末は音声読み上げに対応していません'; }
-    VOICE.on = false; paintVoiceBtn(); return;
-  }
   VOICE.on = LS.get('agentdemo.voice') !== 'off';
-  VOICE.mode = LS.get('agentdemo.voiceMode') || 'voice';
+  VOICE.mode = LS.get('agentdemo.voiceMode') || (VOICE.ok ? 'local' : 'chime');
+  if(!VOICE.ok) VOICE.mode = 'chime';        /* 読み上げ非対応でもチャイムは鳴らせる */
   paintVoiceBtn();
+  const tb0 = $('vtestBtn'); if(tb0) tb0.onclick = voiceTest;
+  if(!VOICE.ok){
+    document.addEventListener('pointerdown', unlockVoice, {once:true, capture:true});
+    document.addEventListener('click', unlockVoice, {once:true, capture:true});
+    if(b) b.onclick = () => {
+      VOICE.on = !VOICE.on; LS.set('agentdemo.voice', VOICE.on ? 'on' : 'off');
+      paintVoiceBtn(); if(VOICE.on) chime('note');
+    };
+    return;
+  }
   try{ speechSynthesis.cancel(); }catch(e){}    /* 前のページから残ったキューを掃除 */
   document.addEventListener('visibilitychange', () => {
     if(document.hidden){ try{ speechSynthesis.cancel(); }catch(e){} VOICE.q = 0; paintSpeaking(); }
@@ -1891,14 +1985,14 @@ function initVoice(){
       VOICE.blocked = false; VOICE.on = true;
       LS.set('agentdemo.voice', 'on');
       paintVoiceBtn();
-      say('音声を有効にしました。', {priority:true});
+      say('音声を有効にしました。', {priority:true, kind:'note'});
       return;
     }
     VOICE.on = !VOICE.on;
     LS.set('agentdemo.voice', VOICE.on ? 'on' : 'off');
     paintVoiceBtn();
     if(!VOICE.on) voiceStop();
-    else say('音声をオンにしました。', {priority:true});
+    else say('音声をオンにしました。', {priority:true, kind:'note'});
   };
   const tb = $('vtestBtn'); if(tb) tb.onclick = voiceTest;
   $('voiceSel').onchange = e => {
@@ -2005,7 +2099,7 @@ function openRun(scId, vId, push){
   const vlabel = v.label.replace(/\s+/g, '');
   say(sc.noRoi
     ? sc.title + 'のデモを始めます。「' + vlabel + '」というケースです。'
-    : sc.title + 'を開始します。' + v.co + '、' + vlabel + 'のケースです。', {priority:true});
+    : sc.title + 'を開始します。' + v.co + '、' + vlabel + 'のケースです。', {priority:true, kind:'start'});
   run(sc, v);
 }
 function runId(){
@@ -2211,10 +2305,10 @@ async function run(sc, v){
       if(s.done || s.halt){
         const isHalt = !!s.halt;
         if(isHalt){
-          say(s.halt, {priority:true});
+          say(s.halt, {priority:true, kind:'done'});
         } else {
           const cut = Math.round((1 - sc.aiMin / sc.baseMin) * 100);
-          say(s.done + ' 担当者の作業時間は' + fmtMin(sc.aiMin) + '。従来の' + fmtMin(sc.baseMin) + 'から' + cut + 'パーセントの削減です。', {priority:true});
+          say(s.done + ' 担当者の作業時間は' + fmtMin(sc.aiMin) + '。従来の' + fmtMin(sc.baseMin) + 'から' + cut + 'パーセントの削減です。', {priority:true, kind:'done'});
         }
         feed.appendChild(el('<div class="done-line'+(isHalt?' halt':'')+'">'+
           ico(isHalt?'stop':'check', isHalt?2:2.6)+'<span>'+esc(s.done||s.halt)+'</span></div>'));
@@ -2274,7 +2368,7 @@ async function run(sc, v){
       /* 所見 */
       if(s.find){
         wrap.appendChild(el('<div class="find'+(s.find.warn?' warn':'')+'"><span>'+s.find.x+'</span></div>'));
-        if(!s.gate) say(s.find.x);          /* 承認がある工程は、承認の呼びかけを優先する */
+        if(!s.gate) say(s.find.x, {kind:'note'});          /* 承認がある工程は、承認の呼びかけを優先する */
         scrollFeed(); await wait(500);
       }
 
@@ -2296,7 +2390,7 @@ async function run(sc, v){
         $('liveDot').className = 'dot wait';
         $('conTag').textContent = 'WAITING FOR HUMAN';
         const g = s.gate;
-        say(g.title + '。ご判断をお願いします。', {priority:true});
+        say(g.title + '。ご判断をお願いします。', {priority:true, kind:'gate'});
         audit('gate', '<b>人の判断を要求</b> — '+esc(g.title)+'（自動処理を一時停止）');
         const box = el('<div class="gate"><div class="gate-hd">'+ico('alert',2.2)+
           '<h4>'+esc(g.title)+'</h4></div><p>'+esc(g.body)+'</p>'+

@@ -781,7 +781,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
     <b>本デモの位置づけ</b> — 登場する企業名・数値・帳票はすべて架空のサンプルです。実在の企業・取引とは関係ありません。
     エージェントの処理は事前設計したシナリオを再生しています（<b>外部通信なし・オフライン動作</b>／音声はOS内蔵の読み上げ機能を使用）。
     実際の削減効果は業務内容・データ整備状況により異なります。
-    <span style="display:block;margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--text-3)">build 2026-09-09d</span>
+    <span style="display:block;margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--text-3)">build 2026-09-09e</span>
   </div>
 </main>
 
@@ -1809,6 +1809,7 @@ function tryOnce(text, mode, waitMs){
     catch(e){ resolve({mode, started:false, err:'build-failed'}); return; }
     u.onstart = () => { started = true; };
     u.onerror = e => { err = e && e.error; };
+    try{ speechSynthesis.resume(); }catch(e){}   /* 一時停止のまま固まっている端末への保険 */
     try{ speechSynthesis.speak(u); }
     catch(e){ resolve({mode, started:false, err:'speak-failed'}); return; }
     setTimeout(() => resolve({mode, started, err}), waitMs);
@@ -1848,7 +1849,9 @@ async function voiceTest(){
     try{ speechSynthesis.cancel(); }catch(e){}
     vnote(document.hidden
       ? 'このページが裏に回っているため再生されませんでした。画面を前面にして、もう一度お試しください。'
-      : '3方式とも再生が始まりませんでした（' + tried.join(' / ') + '）。'
+      : '3方式とも再生が始まりませんでした（' + tried.join(' / ')
+        + ' ／ 状態 paused=' + speechSynthesis.paused + ' speaking=' + speechSynthesis.speaking
+        + ' 音声数=' + VOICE.list.length + '）。'
         + 'ブラウザを一度終了して開き直すか、別のブラウザでお試しください。'
         + 'システム環境設定の「読み上げコンテンツ」で日本語の声がダウンロード済みかもご確認ください。', 'ng');
   } finally {
@@ -2425,6 +2428,5 @@ function calcRoi(sc){
 /* ============================================================ 起動 */
 if(location.hash) applyHash(false);
 </script>
-
 </body>
 </html>

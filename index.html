@@ -668,6 +668,9 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
 .vbtn.on{color:#fff;background:var(--accent);border-color:var(--accent)}
 .vbtn.on:hover:not(:disabled){background:var(--accent-2);border-color:var(--accent-2);color:#fff}
 .vbtn.speaking svg{animation:vpulse .9s ease-in-out infinite}
+.vbtn.blocked{background:var(--gate);border-color:var(--gate);color:#fff}
+.vbtn.blocked:hover:not(:disabled){filter:brightness(1.08);background:var(--gate);border-color:var(--gate);color:#fff}
+.vbtn.blocked svg{animation:vpulse 1.1s ease-in-out infinite}
 @keyframes vpulse{0%,100%{opacity:1}50%{opacity:.35}}
 .vsel{
   font-family:inherit;font-size:11px;padding:6px 7px;border-radius:6px;
@@ -756,7 +759,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
         <div class="gov-item"><h4>止まる条件</h4><p>確信度が基準を下回る／補完データがない／社内基準を外れる場合は自動処理を中止します。しきい値は業務ごとに御社が設定します。</p></div>
         <div class="gov-item"><h4>データの置き場所</h4><p>実装時は、参照データの保存先・保持期間・アクセス権限を業務ごとに定義します。学習への二次利用の可否も契約で明示します。</p></div>
         <div class="gov-item"><h4>権限管理（画面で試せます）</h4><p>エージェントに渡す権限は業務単位で最小化します。実行画面の左側「参照を許可するデータ」でOFFにすると、その工程を飛ばし、何ができなくなるかがその場で分かります。送信権限は原則として渡しません。</p></div>
-        <div class="gov-item"><h4>このデモの構成</h4><p>単一HTMLファイル。外部通信・外部送信は一切ありません。閉域網のPCでもそのまま動きます。入力した数値もブラウザ内に留まります。</p></div><div class="gov-item"><h4>音声読み上げ</h4><p>エージェントの発話はOS内蔵の読み上げ機能（端末内で処理）を使います。端末内蔵の音声を優先して選びますが、環境によってはネットワーク経由の音声しかない場合があります。実行画面の「音声」ボタンでいつでも切れます。</p></div>
+        <div class="gov-item"><h4>このデモの構成</h4><p>単一HTMLファイル。外部通信・外部送信は一切ありません。閉域網のPCでもそのまま動きます。入力した数値もブラウザ内に留まります。</p></div><div class="gov-item"><h4>音声読み上げ</h4><p>エージェントの発話はOS内蔵の読み上げ機能（端末内で処理）を使います。端末内蔵の音声を優先して選びますが、環境によってはネットワーク経由の音声しかない場合があります。実行画面の「音声」ボタンでいつでも切れます。</p></div><div class="gov-item"><h4>音声が鳴らないとき</h4><p>ブラウザは、利用者が一度も操作していないページの自動再生を止めます。<b>実行画面の「音声」ボタンを一度押す</b>と有効になります。止められている間はボタンが赤くなり「音声を有効化」と表示されます。それでも鳴らない場合は端末の音量・出力先と、日本語音声の有無をご確認ください。</p></div>
       </div>
     </div>
   </div>
@@ -774,6 +777,7 @@ tfoot td{padding:9px 10px;font-weight:600;border-top:1px solid var(--line)}
     <b>本デモの位置づけ</b> — 登場する企業名・数値・帳票はすべて架空のサンプルです。実在の企業・取引とは関係ありません。
     エージェントの処理は事前設計したシナリオを再生しています（<b>外部通信なし・オフライン動作</b>／音声はOS内蔵の読み上げ機能を使用）。
     実際の削減効果は業務内容・データ整備状況により異なります。
+    <span style="display:block;margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--text-3)">build 2026-09-09b</span>
   </div>
 </main>
 
@@ -1619,7 +1623,7 @@ function srcOf(scId, step){
 /* ============================ 音声（Web Speech API・端末内で処理） */
 const VOICE = {
   ok: (typeof window !== 'undefined') && ('speechSynthesis' in window) && ('SpeechSynthesisUtterance' in window),
-  on: true, v: null, list: [], last: '', q: 0, unlocked: false
+  on: true, v: null, list: [], last: '', q: 0, unlocked: false, blocked: false
 };
 const VOICE_PREF = ['Kyoko','O-ren','Otoya','Google 日本語','Microsoft Nanami','Microsoft Haruka','Microsoft Ayumi','Microsoft Ichiro','Hattori','Sayaka'];
 const LS = {
@@ -1643,6 +1647,7 @@ function forSpeech(x){
    毎回 cancel すると次の行が前の行を途中で切ってしまい、結果的に何も聞こえなくなる。 */
 function enqueue(t){
   try{
+    try{ speechSynthesis.resume(); }catch(e){}   /* 停止状態のまま固まっている端末への保険 */
     const u = new SpeechSynthesisUtterance(t);
     if(VOICE.v){ try{ u.voice = VOICE.v; }catch(e){} }   /* 音声の指定に失敗しても読み上げは続ける */
     u.lang = 'ja-JP';
@@ -1650,8 +1655,15 @@ function enqueue(t){
     u.pitch = 1; u.volume = 1;
     VOICE.q++;
     const done = () => { VOICE.q = Math.max(0, VOICE.q - 1); paintSpeaking(); };
-    u.onstart = paintSpeaking;
-    u.onend = done; u.onerror = done;
+    u.onstart = () => { VOICE.blocked = false; paintVoiceBtn(); paintSpeaking(); };
+    u.onend = done;
+    u.onerror = (e) => {
+      done();
+      const err = e && e.error;
+      if(err === 'not-allowed' || err === 'blocked' || err === 'audio-busy'){
+        VOICE.blocked = true; paintVoiceBtn();   /* ブラウザが止めた場合はボタンで知らせる */
+      }
+    };
     speechSynthesis.speak(u);
   }catch(e){ VOICE.q = 0; }
 }
@@ -1668,7 +1680,9 @@ function say(text, opt){
   if(!priority && t === VOICE.last) return;
   VOICE.last = t;
   if(priority){
-    /* 承認・開始・完了は必ず今すぐ届ける。cancel 直後の speak は取りこぼすので少し置く */
+    /* 何も鳴っていなければ遅延させずその場で話す。
+       setTimeout を挟むとクリック操作との結び付きが切れ、ブラウザに自動再生として止められる。 */
+    if(!speechSynthesis.speaking && !speechSynthesis.pending){ enqueue(t); return; }
     try{ speechSynthesis.cancel(); }catch(e){}
     VOICE.q = 0; paintSpeaking();
     setTimeout(() => { if(VOICE.on) enqueue(t); }, 160);
@@ -1681,7 +1695,12 @@ function say(text, opt){
 function unlockVoice(){
   if(!VOICE.ok || VOICE.unlocked) return;
   VOICE.unlocked = true;
-  try{ const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); }catch(e){}
+  try{
+    speechSynthesis.resume();
+    const u = new SpeechSynthesisUtterance('あ');   /* 空文字は読み飛ばされるため実文字を使う */
+    u.lang = 'ja-JP'; u.volume = 0; u.rate = 10;    /* 無音・一瞬で終わる */
+    speechSynthesis.speak(u);
+  }catch(e){}
 }
 function voiceStop(){
   if(!VOICE.ok) return;
@@ -1691,10 +1710,14 @@ function voiceStop(){
 }
 function paintVoiceBtn(){
   const b = $('voiceBtn'); if(!b) return;
-  b.classList.toggle('on', VOICE.on);
+  b.classList.toggle('on', VOICE.on && !VOICE.blocked);
+  b.classList.toggle('blocked', !!VOICE.blocked);
   b.setAttribute('aria-pressed', String(VOICE.on));
   $('voiceIco').innerHTML = ico(VOICE.on ? 'spkOn' : 'spkOff', 2);
-  $('voiceLbl').textContent = VOICE.on ? '音声 ON' : '音声 OFF';
+  $('voiceLbl').textContent = VOICE.blocked ? '音声を有効化' : (VOICE.on ? '音声 ON' : '音声 OFF');
+  b.title = VOICE.blocked
+    ? 'ブラウザが自動再生を止めています。このボタンを押すと有効になります。'
+    : (VOICE.v ? '読み上げ音声：' + VOICE.v.name + (VOICE.v.localService ? '（端末内で処理）' : '（ネットワーク経由の音声です）') : 'エージェントの音声読み上げ');
 }
 function paintVoiceSel(){
   const sel = $('voiceSel'); if(!sel) return;
@@ -1731,15 +1754,23 @@ function initVoice(){
   };
   load();
   speechSynthesis.addEventListener('voiceschanged', load);
-  document.addEventListener('pointerdown', unlockVoice, {once:true});
-  document.addEventListener('keydown', unlockVoice, {once:true});
+  document.addEventListener('pointerdown', unlockVoice, {once:true, capture:true});
+  document.addEventListener('click', unlockVoice, {once:true, capture:true});
+  document.addEventListener('keydown', unlockVoice, {once:true, capture:true});
 
   b.onclick = () => {
+    if(VOICE.blocked){                       /* 止められていた場合はこのクリックで解除する */
+      VOICE.blocked = false; VOICE.on = true;
+      LS.set('agentdemo.voice', 'on');
+      paintVoiceBtn();
+      say('音声を有効にしました。', {priority:true});
+      return;
+    }
     VOICE.on = !VOICE.on;
     LS.set('agentdemo.voice', VOICE.on ? 'on' : 'off');
     paintVoiceBtn();
     if(!VOICE.on) voiceStop();
-    else say('音声をオンにしました。');
+    else say('音声をオンにしました。', {priority:true});
   };
   $('voiceSel').onchange = e => {
     VOICE.v = VOICE.list.find(v => v.name === e.target.value) || VOICE.v;

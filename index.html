@@ -1619,7 +1619,7 @@ function srcOf(scId, step){
 /* ============================ 音声（Web Speech API・端末内で処理） */
 const VOICE = {
   ok: (typeof window !== 'undefined') && ('speechSynthesis' in window) && ('SpeechSynthesisUtterance' in window),
-  on: true, v: null, list: [], last: ''
+  on: true, v: null, list: [], last: '', q: 0, unlocked: false
 };
 const VOICE_PREF = ['Kyoko','O-ren','Otoya','Google 日本語','Microsoft Nanami','Microsoft Haruka','Microsoft Ayumi','Microsoft Ichiro','Hattori','Sayaka'];
 const LS = {
@@ -1639,30 +1639,54 @@ function forSpeech(x){
     .replace(/、{2,}/g, '、');
 }
 
-function say(text){
-  if(!VOICE.ok || !VOICE.on) return;
-  let t = forSpeech(text);
-  if(!t) return;
-  if(t.length > 110) t = t.slice(0,108) + '。';
-  if(t === VOICE.last && speechSynthesis.speaking) return;
-  VOICE.last = t;
+/* 発話は「積む」。切るのは要所だけ。
+   毎回 cancel すると次の行が前の行を途中で切ってしまい、結果的に何も聞こえなくなる。 */
+function enqueue(t){
   try{
-    speechSynthesis.cancel();               /* 常に映像に同期させる */
     const u = new SpeechSynthesisUtterance(t);
     if(VOICE.v){ try{ u.voice = VOICE.v; }catch(e){} }   /* 音声の指定に失敗しても読み上げは続ける */
     u.lang = 'ja-JP';
     u.rate = Math.min(1.7, Math.max(0.7, 1.02 * st.speed));
     u.pitch = 1; u.volume = 1;
-    u.onstart = () => { const b=$('voiceBtn'); if(b) b.classList.add('speaking'); };
-    const off = () => { const b=$('voiceBtn'); if(b && !speechSynthesis.speaking) b.classList.remove('speaking'); };
-    u.onend = off; u.onerror = off;
+    VOICE.q++;
+    const done = () => { VOICE.q = Math.max(0, VOICE.q - 1); paintSpeaking(); };
+    u.onstart = paintSpeaking;
+    u.onend = done; u.onerror = done;
     speechSynthesis.speak(u);
-  }catch(e){}
+  }catch(e){ VOICE.q = 0; }
+}
+function paintSpeaking(){
+  const b = $('voiceBtn'); if(!b) return;
+  b.classList.toggle('speaking', VOICE.q > 0);
+}
+function say(text, opt){
+  if(!VOICE.ok || !VOICE.on) return;
+  let t = forSpeech(text);
+  if(!t) return;
+  if(t.length > 100) t = t.slice(0,98) + '。';        /* 長すぎる発話は途中で止まる端末があるため */
+  const priority = !!(opt && opt.priority);
+  if(!priority && t === VOICE.last) return;
+  VOICE.last = t;
+  if(priority){
+    /* 承認・開始・完了は必ず今すぐ届ける。cancel 直後の speak は取りこぼすので少し置く */
+    try{ speechSynthesis.cancel(); }catch(e){}
+    VOICE.q = 0; paintSpeaking();
+    setTimeout(() => { if(VOICE.on) enqueue(t); }, 160);
+    return;
+  }
+  if(VOICE.q >= 2) return;        /* 溜まってきたら読み飛ばして映像に追いつく */
+  enqueue(t);
+}
+/* 最初のクリックで読み上げを解錠する（自動再生制限の回避） */
+function unlockVoice(){
+  if(!VOICE.ok || VOICE.unlocked) return;
+  VOICE.unlocked = true;
+  try{ const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); }catch(e){}
 }
 function voiceStop(){
   if(!VOICE.ok) return;
   try{ speechSynthesis.cancel(); }catch(e){}
-  VOICE.last = '';
+  VOICE.last = ''; VOICE.q = 0;
   const b=$('voiceBtn'); if(b) b.classList.remove('speaking');
 }
 function paintVoiceBtn(){
@@ -1707,6 +1731,8 @@ function initVoice(){
   };
   load();
   speechSynthesis.addEventListener('voiceschanged', load);
+  document.addEventListener('pointerdown', unlockVoice, {once:true});
+  document.addEventListener('keydown', unlockVoice, {once:true});
 
   b.onclick = () => {
     VOICE.on = !VOICE.on;
@@ -1818,7 +1844,7 @@ function openRun(scId, vId, push){
   const vlabel = v.label.replace(/\s+/g, '');
   say(sc.noRoi
     ? sc.title + 'のデモを始めます。「' + vlabel + '」というケースです。'
-    : sc.title + 'を開始します。' + v.co + '、' + vlabel + 'のケースです。');
+    : sc.title + 'を開始します。' + v.co + '、' + vlabel + 'のケースです。', {priority:true});
   run(sc, v);
 }
 function runId(){
@@ -1857,7 +1883,7 @@ $('nextAgain').onclick = () => openRun(st.sc.id, st.v.id, false);
 $('pauseBtn').onclick = () => {
   st.paused = !st.paused;
   $('pauseBtn').textContent = st.paused ? '再開' : '一時停止';
-  if(VOICE.ok){ try{ st.paused ? speechSynthesis.pause() : speechSynthesis.resume(); }catch(e){} }
+  if(VOICE.ok){ try{ if(st.paused){ if(speechSynthesis.speaking) speechSynthesis.pause(); } else speechSynthesis.resume(); }catch(e){} }
 };
 $('speed').onclick = e => {
   const b = e.target.closest('button[data-s]'); if(!b) return;
@@ -2024,10 +2050,10 @@ async function run(sc, v){
       if(s.done || s.halt){
         const isHalt = !!s.halt;
         if(isHalt){
-          say(s.halt);
+          say(s.halt, {priority:true});
         } else {
           const cut = Math.round((1 - sc.aiMin / sc.baseMin) * 100);
-          say(s.done + ' 担当者の作業時間は' + fmtMin(sc.aiMin) + '。従来の' + fmtMin(sc.baseMin) + 'から' + cut + 'パーセントの削減です。');
+          say(s.done + ' 担当者の作業時間は' + fmtMin(sc.aiMin) + '。従来の' + fmtMin(sc.baseMin) + 'から' + cut + 'パーセントの削減です。', {priority:true});
         }
         feed.appendChild(el('<div class="done-line'+(isHalt?' halt':'')+'">'+
           ico(isHalt?'stop':'check', isHalt?2:2.6)+'<span>'+esc(s.done||s.halt)+'</span></div>'));
@@ -2060,7 +2086,6 @@ async function run(sc, v){
       const txt = wrap.querySelector('.step-x');
       const caret = el('<span class="caret"></span>');
       wrap.querySelector('.step-t').appendChild(caret);
-      if(n === 1) say(s.t);
       await type(txt, s.t);
       caret.remove();
 
@@ -2110,7 +2135,7 @@ async function run(sc, v){
         $('liveDot').className = 'dot wait';
         $('conTag').textContent = 'WAITING FOR HUMAN';
         const g = s.gate;
-        say((s.find ? stripTags(s.find.x) + ' ' : '') + g.title + '。ご判断をお願いします。');
+        say(g.title + '。ご判断をお願いします。', {priority:true});
         audit('gate', '<b>人の判断を要求</b> — '+esc(g.title)+'（自動処理を一時停止）');
         const box = el('<div class="gate"><div class="gate-hd">'+ico('alert',2.2)+
           '<h4>'+esc(g.title)+'</h4></div><p>'+esc(g.body)+'</p>'+
